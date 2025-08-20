@@ -210,30 +210,13 @@ const VoiceAgent = () => {
         );
         setIsListening(true);
 
-        // 🔥 CRITICAL FIX: Start tracking functions when ElevenLabs connects successfully
-        if (currentCallStartTime && currentCallLogId) {
-          console.log(
-            "🚀 onConnect: Starting tracking functions with callStartTime:",
-            currentCallStartTime,
-          );
-          console.log("🚀 onConnect: callLogId:", currentCallLogId);
-          startUsageTrackingWithTime(currentCallStartTime);
-          startLimitMonitoringWithTime(currentCallStartTime);
-          console.log("🎯 onConnect: Tracking functions started successfully!");
-        } else if (currentCallLogId) {
-          // Fallback with current time if callStartTime is not set
-          const fallbackTime = new Date();
-          console.log(
-            "🔄 onConnect: Using fallback time for tracking:",
-            fallbackTime,
-          );
-          startUsageTrackingWithTime(fallbackTime);
-          startLimitMonitoringWithTime(fallbackTime);
-        } else {
-          console.warn(
-            "⚠️ onConnect: No callLogId available, cannot start tracking!",
-          );
-        }
+        // 🔥 CRITICAL FIX: DON'T start tracking here - it's already started in startConversation
+        // This prevents duplicate intervals which cause the warning bug
+        console.log(
+          "📍 onConnect: SKIPPING tracking start - already started in startConversation to prevent duplicates",
+        );
+        console.log("📍 onConnect: currentCallStartTime:", currentCallStartTime);
+        console.log("📍 onConnect: currentCallLogId:", currentCallLogId);
       } else {
         console.log(
           "🚨 onConnect: NOT setting isListening=true - no conversationId, probably auto-connect",
@@ -713,8 +696,11 @@ const VoiceAgent = () => {
     startTime: Date,
     callLogId?: number,
   ) => {
+    // CRITICAL FIX: Always clear any existing interval first
     if (limitCheckInterval) {
+      console.log("🛑 CRITICAL: Clearing existing limit monitoring interval to prevent duplicates");
       clearInterval(limitCheckInterval);
+      setLimitCheckInterval(null);
     }
 
     console.log(
@@ -723,6 +709,7 @@ const VoiceAgent = () => {
       "callLogId:",
       callLogId,
     );
+    
     // Check every 1 second during active call for immediate feedback
     const interval = setInterval(async () => {
       // Continue monitoring as long as we have startTime - don't auto-stop
@@ -1319,7 +1306,7 @@ const VoiceAgent = () => {
           immediateState,
         );
 
-        // Start both tracking systems with immediate state values
+        // Start both tracking systems with immediate state values - ONLY ONCE HERE
         console.log(
           "🔄 CRITICAL DEBUG: Starting usage tracking with immediate state",
         );
@@ -1329,7 +1316,7 @@ const VoiceAgent = () => {
         );
 
         console.log(
-          "🔄 CRITICAL DEBUG: Starting limit monitoring with immediate state",
+          "🔄 CRITICAL DEBUG: Starting limit monitoring with immediate state - MAIN START POINT",
         );
         startLimitMonitoringWithTime(
           immediateState.callStartTime,
@@ -1385,22 +1372,10 @@ const VoiceAgent = () => {
       );
       console.log("🎉 CONVERSATION STARTED! Should see 3-second logs now...");
 
-      // 🔥 DIRECT FIX: Start tracking immediately after conversation setup
-      // Don't wait for onConnect callback since it's not reliable
-      console.log("🚀 DIRECT: Starting tracking functions immediately...");
-      if (callLogId && callStartTime) {
-        console.log("🚀 DIRECT: Starting with logged time:", callStartTime);
-        startUsageTrackingWithTime(callStartTime);
-        startLimitMonitoringWithTime(callStartTime);
-        console.log("🎯 DIRECT: Tracking started successfully!");
-      } else {
-        // Fallback with current time
-        const directTime = new Date();
-        console.log("🔄 DIRECT: Using current time for tracking:", directTime);
-        startUsageTrackingWithTime(directTime);
-        startLimitMonitoringWithTime(directTime);
-        console.log("🔄 DIRECT: Fallback tracking started!");
-      }
+      // 🔥 CRITICAL FIX: DON'T start tracking here - already started above with immediateState
+      // This was causing duplicate intervals and premature warnings
+      console.log("🚀 DIRECT: SKIPPING duplicate tracking start - already started with immediateState above");
+      console.log("🚀 DIRECT: callLogId:", callLogId, "callStartTime:", callStartTime);
     } catch (error) {
       console.error("Error starting conversation:", error);
 
