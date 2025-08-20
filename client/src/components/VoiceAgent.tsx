@@ -18,6 +18,9 @@ const LANGUAGE_CONTENT = {
     calling: "Calling...",
     connected: "Connected",
     disconnected: "Call Ended",
+    dailyUsage: "Total calls today: {used} / {limit} minutes",
+    muteButton: "Mute",
+    unmuteButton: "Unmute",
     firstMessage:
       "Hello {{user_name}}, I am INKA - your personal assistant. What would you like me to help with today?",
     features: [
@@ -53,6 +56,9 @@ const LANGUAGE_CONTENT = {
     calling: "Đang gọi...",
     connected: "Đã kết nối",
     disconnected: "Đã kết thúc cuộc gọi",
+    dailyUsage: "Tổng gọi hôm nay: {used} / {limit} phút",
+    muteButton: "Tắt tiếng",
+    unmuteButton: "Mở tiếng",
     firstMessage:
       "Em chào {{greeting_message}} {{user_name}}, em là INKA - một trợ lý cá nhân. {{user_name}} muốn em giúp gì trong hôm nay?",
     features: [
@@ -1491,7 +1497,7 @@ const VoiceAgent = () => {
                   />
                 </svg>
               )}
-              {isMuted ? "Mở tiếng" : "Tắt tiếng"}
+              {isMuted ? currentContent.unmuteButton : currentContent.muteButton}
               {(() => {
                 console.log(
                   "🔍 Button render - isMuted:",
@@ -1527,7 +1533,7 @@ const VoiceAgent = () => {
       {userId && (
         <div className="fixed bottom-4 left-4 z-40">
           <div className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded border">
-            Tổng gọi hôm nay: {totalMinutesUsed} / {dailyUserLimit} phút
+            {currentContent.dailyUsage.replace("{used}", totalMinutesUsed).replace("{limit}", String(dailyUserLimit))}
           </div>
         </div>
       )}
