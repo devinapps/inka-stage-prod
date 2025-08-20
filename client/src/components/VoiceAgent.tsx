@@ -95,12 +95,12 @@ const VoiceAgent = () => {
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
   const [limitCheckInterval, setLimitCheckInterval] =
     useState<NodeJS.Timeout | null>(null);
-  const [noiseFilterEnabled, setNoiseFilterEnabled] = useState(true);
+  const [noiseFilterEnabled, setNoiseFilterEnabled] = useState(true); // Always enabled
   const [noiseSensitivity, setNoiseSensitivity] = useState<
     "low" | "medium" | "high" | "aggressive"
-  >("medium");
+  >("high"); // Default to "high" for noisy environments like supermarkets
   const audioFiltersRef = useRef<AudioFilters | null>(null);
-  const [useWebRTC, setUseWebRTC] = useState(true); // Enable WebRTC by default
+  const [useWebRTC, setUseWebRTC] = useState(true); // Always enable WebRTC by default
   const [isMuted, setIsMuted] = useState(false);
 
   // Refs for callback access to current state values
@@ -1530,74 +1530,7 @@ const VoiceAgent = () => {
           </div>
         )}
 
-        {/* Noise Filter Controls */}
-        <div className="flex justify-center mb-4">
-          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setNoiseFilterEnabled(!noiseFilterEnabled)}
-                className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                  noiseFilterEnabled
-                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                    : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
-                }`}
-              >
-                <svg
-                  className="w-3 h-3"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.82L4.821 14H3a1 1 0 01-1-1V7a1 1 0 011-1h1.821l3.562-2.82a1 1 0 011.617.82zM14.657 2.929a1 1 0 011.414 0A9.972 9.972 0 0119 10a9.972 9.972 0 01-2.929 7.071 1 1 0 11-1.414-1.414A7.971 7.971 0 0017 10c0-2.21-.894-4.208-2.343-5.657a1 1 0 010-1.414zm-2.829 2.828a1 1 0 011.415 0A5.983 5.983 0 0115 10a5.983 5.983 0 01-1.757 4.243 1 1 0 01-1.415-1.414A3.983 3.983 0 0013 10a3.983 3.983 0 00-1.172-2.829 1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                {noiseFilterEnabled ? "Lọc tiếng ồn: BẬT" : "Lọc tiếng ồn: TẮT"}
-              </button>
-            </div>
 
-            {noiseFilterEnabled && (
-              <>
-                <button
-                  onClick={() => setUseWebRTC(!useWebRTC)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
-                    useWebRTC
-                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
-                      : "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
-                  }`}
-                >
-                  <svg
-                    className="w-3 h-3"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                  </svg>
-                  {useWebRTC ? "WebRTC" : "Legacy"}
-                </button>
-                <select
-                  value={noiseSensitivity}
-                  onChange={(e) =>
-                    setNoiseSensitivity(
-                      e.target.value as
-                        | "low"
-                        | "medium"
-                        | "high"
-                        | "aggressive",
-                    )
-                  }
-                  className="px-2 py-1 text-xs rounded border bg-background"
-                >
-                  <option value="low">Nhẹ (môi trường yên tĩnh)</option>
-                  <option value="medium">Vừa (môi trường bình thường)</option>
-                  <option value="high">Mạnh (siêu thị, nơi ồn)</option>
-                  <option value="aggressive">Tối đa (cực kỳ ồn ào)</option>
-                </select>
-              </>
-            )}
-          </div>
-        </div>
 
         {/* Real-time Call Duration Display - Hidden per user request */}
         {false && isListening && currentCallDuration > 0 && (
