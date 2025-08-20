@@ -97,7 +97,7 @@ const VoiceAgent = () => {
     useState<NodeJS.Timeout | null>(null);
   const [noiseFilterEnabled, setNoiseFilterEnabled] = useState(true);
   const [noiseSensitivity, setNoiseSensitivity] = useState<
-    "low" | "medium" | "high"
+    "low" | "medium" | "high" | "aggressive"
   >("medium");
   const audioFiltersRef = useRef<AudioFilters | null>(null);
   const [useWebRTC, setUseWebRTC] = useState(true); // Enable WebRTC by default
@@ -162,6 +162,8 @@ const VoiceAgent = () => {
       if (audioFiltersRef.current) {
         audioFiltersRef.current.dispose();
       }
+      // Cleanup WebRTC filters on unmount
+      webrtcFilters.cleanup();
       // Cleanup WebRTC filters
       webrtcFilters.cleanup();
       
@@ -1353,19 +1355,35 @@ const VoiceAgent = () => {
             </div>
 
             {noiseFilterEnabled && (
-              <select
-                value={noiseSensitivity}
-                onChange={(e) =>
-                  setNoiseSensitivity(
-                    e.target.value as "low" | "medium" | "high",
-                  )
-                }
-                className="px-2 py-1 text-xs rounded border bg-background"
-              >
-                <option value="low">Nhẹ (môi trường yên tĩnh)</option>
-                <option value="medium">Vừa (môi trường bình thường)</option>
-                <option value="high">Mạnh (siêu thị, nơi ồn)</option>
-              </select>
+              <>
+                <button
+                  onClick={() => setUseWebRTC(!useWebRTC)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-medium transition-colors ${
+                    useWebRTC
+                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
+                      : "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
+                  }`}
+                >
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                  </svg>
+                  {useWebRTC ? "WebRTC" : "Legacy"}
+                </button>
+                <select
+                  value={noiseSensitivity}
+                  onChange={(e) =>
+                    setNoiseSensitivity(
+                      e.target.value as "low" | "medium" | "high" | "aggressive",
+                    )
+                  }
+                  className="px-2 py-1 text-xs rounded border bg-background"
+                >
+                  <option value="low">Nhẹ (môi trường yên tĩnh)</option>
+                  <option value="medium">Vừa (môi trường bình thường)</option>
+                  <option value="high">Mạnh (siêu thị, nơi ồn)</option>
+                  <option value="aggressive">Tối đa (cực kỳ ồn ào)</option>
+                </select>
+              </>
             )}
           </div>
         </div>
