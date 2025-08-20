@@ -3,6 +3,15 @@
 ## Overview
 This project is a full-stack voice AI agent application called "Inka", offering a voice-activated AI assistant with speech recognition and text-to-speech capabilities. Built with React and Express.js, it features a modern UI using shadcn/ui and Tailwind CSS. The application aims to provide an engaging user experience through advanced voice AI integration, including database-managed call limit system. The business vision is to deliver a seamless, intuitive, and scalable voice AI solution with configurable operational limits.
 
+## Recent Changes (August 14, 2025)
+- **WebRTC Integration**: Implemented advanced WebRTC-based noise filtering system with 7-stage audio processing
+- **Enhanced Noise Filtering**: Added aggressive mode and 4 noise sensitivity levels (low/medium/high/aggressive)
+- **Audio Processing Chain**: Notch filter, high-pass, speech enhancer, low-pass, compressor, noise gate, limiter
+- **User Controls**: WebRTC toggle button and enhanced noise level controls in UI
+- **ElevenLabs Optimization**: WebRTC filters specifically tuned for voice AI conversations
+- **Fallback System**: Legacy audio filters as backup when WebRTC is disabled
+- **Real-time Monitoring**: Audio metrics tracking for compression gain, noise floor, gate status
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 

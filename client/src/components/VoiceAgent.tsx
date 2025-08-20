@@ -5,6 +5,7 @@ import { ELEVENLABS_CONFIG } from "@/config/elevenlabs";
 import VoiceAvatar from "./VoiceAvatar";
 import InfoModal from "./InfoModal";
 import AudioFilters from "@/utils/audioFilters";
+import { webrtcFilters, type NoiseFilterLevel } from "@/utils/webrtcFilters";
 
 // Language content configuration
 const LANGUAGE_CONTENT = {
@@ -95,6 +96,10 @@ const VoiceAgent = () => {
   const [limitCheckInterval, setLimitCheckInterval] =
     useState<NodeJS.Timeout | null>(null);
   const [noiseFilterEnabled, setNoiseFilterEnabled] = useState(true);
+  const [noiseSensitivity, setNoiseSensitivity] =
+    useState<NoiseFilterLevel>("medium");
+  const audioFiltersRef = useRef<AudioFilters | null>(null);
+  const [useWebRTC, setUseWebRTC] = useState(true); // Enable WebRTC by default
   const [noiseSensitivity, setNoiseSensitivity] = useState<
     "low" | "medium" | "high"
   >("medium");
@@ -160,6 +165,8 @@ const VoiceAgent = () => {
       if (audioFiltersRef.current) {
         audioFiltersRef.current.dispose();
       }
+      // Cleanup WebRTC filters
+      webrtcFilters.cleanup();
       
       // Cleanup usage tracking
       if (trackingIntervalRef.current) {
@@ -319,20 +326,40 @@ const VoiceAgent = () => {
     };
   }, [isSpeaking]);
 
-  // Request microphone access with noise filtering on component mount
+  // Request microphone access with WebRTC noise filtering on component mount
   useEffect(() => {
     const requestMicrophoneAccess = async () => {
       try {
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-          if (noiseFilterEnabled && audioFiltersRef.current) {
-            // Use filtered microphone with noise suppression
-            console.log("🎤 Initializing microphone with noise filtering...");
-            const filteredStream =
-              await audioFiltersRef.current.getFilteredMicrophoneStream();
-            console.log("🎤 Microphone access granted with noise filtering");
+          if (noiseFilterEnabled) {
+            if (useWebRTC) {
+              // Use WebRTC advanced filtering system
+              console.log(
+                "🎤 Initializing microphone with WebRTC noise filtering...",
+              );
+              const webrtcStream =
+                await webrtcFilters.getOptimizedStream(noiseSensitivity);
+              console.log("🎤 Microphone access granted with WebRTC filtering");
 
-            // Set noise sensitivity based on environment
-            audioFiltersRef.current.adjustNoiseSensitivity(noiseSensitivity);
+              // Log WebRTC audio metrics
+              const metrics = await webrtcFilters.getAudioMetrics();
+              console.log("🎛️ WebRTC audio metrics:", metrics);
+            } else if (audioFiltersRef.current) {
+              // Fallback to legacy audio filters
+              console.log(
+                "🎤 Initializing microphone with legacy noise filtering...",
+              );
+              const filteredStream =
+                await audioFiltersRef.current.getFilteredMicrophoneStream();
+              console.log("🎤 Microphone access granted with legacy filtering");
+
+              // Set noise sensitivity based on environment (cast for legacy compatibility)
+              audioFiltersRef.current.adjustNoiseSensitivity(
+                noiseSensitivity === "aggressive"
+                  ? "high"
+                  : (noiseSensitivity as "low" | "medium" | "high"),
+              );
+            }
           } else {
             // Basic microphone access with native noise suppression
             await navigator.mediaDevices.getUserMedia({
@@ -355,7 +382,7 @@ const VoiceAgent = () => {
     };
 
     requestMicrophoneAccess();
-  }, [noiseFilterEnabled, noiseSensitivity]);
+  }, [noiseFilterEnabled, noiseSensitivity, useWebRTC]);
 
   // Cleanup on unmount and handle page beforeunload
   useEffect(() => {
@@ -1080,8 +1107,21 @@ const VoiceAgent = () => {
       }
 
       // Create session options with user data as dynamic variables
+      const currentUserData = userData || {
+        user_id: parseInt(userId) || 269,
+        user_email: "test@example.com",
+        user_name: "Test User",
+        token_valid: false,
+        limit_call_duration_per_day: 15,
+        called_duration_per_day: 0,
+        TOTAL_CALL_DURATION_PER_DAY: "120",
+        env: "testing",
+      };
+
       const sessionOptions: any = {
         signedUrl: signedUrl,
+        agentId: ELEVENLABS_CONFIG.voiceAgentId,
+        connectionType: "webrtc", // Enable WebRTC connection for ElevenLabs
         dynamicVariables: {
           userid: userData.user_id,
           userId: userData.user_id,
@@ -1289,7 +1329,7 @@ const VoiceAgent = () => {
         )}
 
         {/* Noise Filter Controls */}
-        <div className="flex justify-center mb-4 hidden">
+        <div className="flex justify-center mb-4">
           <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
             <div className="flex items-center gap-2">
               <button
