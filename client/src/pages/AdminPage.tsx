@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Trash2, BarChart3, RefreshCw, Settings } from 'lucide-react';
+import { Trash2, BarChart3, RefreshCw, Settings, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 
@@ -127,6 +127,16 @@ export function AdminPage() {
                 >
                   <Settings className="h-4 w-4" />
                   Cài đặt hệ thống
+                </Button>
+              </Link>
+
+              <Link href="/admin/call-logs">
+                <Button 
+                  variant="outline" 
+                  className="flex items-center gap-2"
+                >
+                  <Clock className="h-4 w-4" />
+                  Chi tiết cuộc gọi
                 </Button>
               </Link>
             </div>

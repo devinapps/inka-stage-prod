@@ -51,7 +51,7 @@ const startCleanupService = () => {
       const response = await fetch('http://localhost:5000/api/call/cleanup-orphaned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ maxDurationMinutes: 30 })
+        body: JSON.stringify({ maxDurationMinutes: 2.0 })
       });
       
       if (response.ok) {
@@ -65,11 +65,11 @@ const startCleanupService = () => {
     }
   };
   
-  // Run cleanup every 5 minutes
-  setInterval(cleanupOrphanedCalls, 5 * 60 * 1000);
+  // Run cleanup every 10 seconds for very aggressive orphan detection
+  setInterval(cleanupOrphanedCalls, 10 * 1000);
   
-  // Run initial cleanup after 30 seconds
-  setTimeout(cleanupOrphanedCalls, 30 * 1000);
+  // Run initial cleanup after 5 seconds
+  setTimeout(cleanupOrphanedCalls, 5 * 1000);
 };
 
 (async () => {

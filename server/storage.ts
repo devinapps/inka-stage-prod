@@ -1,6 +1,6 @@
 import { users, callLogs, systemSettings, type User, type InsertUser, type InsertCallLog, type CallLog, type InsertSystemSetting, type SystemSetting } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, sum, isNull, lt } from "drizzle-orm";
+import { eq, and, sum, isNull, lt, count, desc } from "drizzle-orm";
 
 // modify the interface with any CRUD methods
 // you might need
@@ -13,8 +13,11 @@ export interface IStorage {
   // Call log methods
   createCallLog(callLog: InsertCallLog): Promise<CallLog>;
   updateCallLog(id: number, updates: Partial<InsertCallLog>): Promise<CallLog | undefined>;
+  getCallLog(id: number): Promise<CallLog | undefined>;
   getDailyUserSeconds(userId: string, date: string): Promise<number>;
   getDailyTotalSeconds(date: string): Promise<number>;
+  getUserTotalSeconds(userId: string): Promise<number>;
+  getUserDailySeconds(userId: string): Promise<number>;
   getActiveCall(userId: string): Promise<CallLog | undefined>;
   getOrphanedCalls(cutoffTime: Date): Promise<CallLog[]>;
   
@@ -26,6 +29,17 @@ export interface IStorage {
   // Admin methods
   resetAllCallData(): Promise<{ deletedCount: number }>;
   getUsageStats(): Promise<any>;
+  getCallLogsWithFilters(filters: {
+    date?: string;
+    userId?: string;
+    page: number;
+    limit: number;
+  }): Promise<{
+    logs: CallLog[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -64,6 +78,14 @@ export class DatabaseStorage implements IStorage {
     return log || undefined;
   }
 
+  async getCallLog(id: number): Promise<CallLog | undefined> {
+    const [log] = await db
+      .select()
+      .from(callLogs)
+      .where(eq(callLogs.id, id));
+    return log || undefined;
+  }
+
   async getDailyUserSeconds(userId: string, date: string): Promise<number> {
     const result = await db
       .select({ total: sum(callLogs.durationSeconds) })
@@ -81,6 +103,30 @@ export class DatabaseStorage implements IStorage {
       .select({ total: sum(callLogs.durationSeconds) })
       .from(callLogs)
       .where(eq(callLogs.date, date));
+    
+    return Number(result[0]?.total || 0);
+  }
+
+  async getUserTotalSeconds(userId: string): Promise<number> {
+    const result = await db
+      .select({ total: sum(callLogs.durationSeconds) })
+      .from(callLogs)
+      .where(eq(callLogs.userId, userId));
+    
+    return Number(result[0]?.total || 0);
+  }
+
+  async getUserDailySeconds(userId: string): Promise<number> {
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date().toISOString().split('T')[0];
+    
+    const result = await db
+      .select({ total: sum(callLogs.durationSeconds) })
+      .from(callLogs)
+      .where(and(
+        eq(callLogs.userId, userId),
+        eq(callLogs.date, today)
+      ));
     
     return Number(result[0]?.total || 0);
   }
@@ -163,22 +209,78 @@ export class DatabaseStorage implements IStorage {
       .where(eq(callLogs.date, today))
       .groupBy(callLogs.userId);
 
-    // Use fixed config limits as per requirements
-    // Use fixed config limits as per requirements
-    const dailyTotalLimitMinutes = 180; // 180 minutes total per day
-    const dailyUserLimitMinutes = 10; // 10 minutes per user per day
+    // Get limits from database settings (dynamic)
+    const [userLimitSetting, totalLimitSetting] = await Promise.all([
+      this.getSetting('DAILY_USER_LIMIT_MINUTES'),
+      this.getSetting('DAILY_TOTAL_LIMIT_MINUTES')
+    ]);
+    
+    const dailyUserLimitMinutes = parseInt(userLimitSetting || '10'); // Default 10 if not set
+    const dailyTotalLimitMinutes = parseInt(totalLimitSetting || '180'); // Default 180 if not set
+    
+    const processedUserStats = userStats.map(stat => ({
+      userId: stat.userId,
+      totalSeconds: Number(stat.totalSeconds || 0),
+      remainingSeconds: Math.max(0, (dailyUserLimitMinutes * 60) - Number(stat.totalSeconds || 0))
+    }));
     
     return {
       date: today,
       dailyTotalSeconds: dailyTotal,
       dailyTotalLimitSeconds: dailyTotalLimitMinutes * 60,
       dailyUserLimitSeconds: dailyUserLimitMinutes * 60,
-      userStats: userStats.map(stat => ({
-        userId: stat.userId,
-        totalSeconds: Number(stat.totalSeconds || 0),
-        remainingSeconds: Math.max(0, (dailyUserLimitMinutes * 60) - Number(stat.totalSeconds || 0))
-      })),
+      userStats: processedUserStats,
       systemRemainingSeconds: Math.max(0, (dailyTotalLimitMinutes * 60) - dailyTotal)
+    };
+  }
+
+  async getCallLogsWithFilters(filters: {
+    date?: string;
+    userId?: string;
+    page: number;
+    limit: number;
+  }): Promise<{
+    logs: CallLog[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const { date, userId, page, limit } = filters;
+    const offset = (page - 1) * limit;
+
+    // Build where conditions
+    const whereConditions = [];
+    if (date) {
+      whereConditions.push(eq(callLogs.date, date));
+    }
+    if (userId) {
+      whereConditions.push(eq(callLogs.userId, userId));
+    }
+
+    const whereClause = whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+    // Get total count for pagination
+    const totalResult = await db
+      .select({ count: count() })
+      .from(callLogs)
+      .where(whereClause);
+
+    const total = totalResult[0]?.count || 0;
+
+    // Get paginated logs
+    const logs = await db
+      .select()
+      .from(callLogs)
+      .where(whereClause)
+      .orderBy(desc(callLogs.startTime))
+      .limit(limit)
+      .offset(offset);
+
+    return {
+      logs,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
     };
   }
 }
