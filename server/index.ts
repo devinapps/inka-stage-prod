@@ -51,7 +51,7 @@ const startCleanupService = () => {
       const response = await fetch('http://localhost:5000/api/call/cleanup-orphaned', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ maxDurationMinutes: 2.0 })
+        body: JSON.stringify({ maxDurationMinutes: 30 })
       });
       
       if (response.ok) {
