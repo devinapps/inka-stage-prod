@@ -96,14 +96,11 @@ const VoiceAgent = () => {
   const [limitCheckInterval, setLimitCheckInterval] =
     useState<NodeJS.Timeout | null>(null);
   const [noiseFilterEnabled, setNoiseFilterEnabled] = useState(true);
-  const [noiseSensitivity, setNoiseSensitivity] =
-    useState<NoiseFilterLevel>("medium");
-  const audioFiltersRef = useRef<AudioFilters | null>(null);
-  const [useWebRTC, setUseWebRTC] = useState(true); // Enable WebRTC by default
   const [noiseSensitivity, setNoiseSensitivity] = useState<
     "low" | "medium" | "high"
   >("medium");
   const audioFiltersRef = useRef<AudioFilters | null>(null);
+  const [useWebRTC, setUseWebRTC] = useState(true); // Enable WebRTC by default
   const [isMuted, setIsMuted] = useState(false);
   
   // Refs for callback access to current state values
