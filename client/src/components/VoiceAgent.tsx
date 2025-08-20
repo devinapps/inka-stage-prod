@@ -102,7 +102,7 @@ const VoiceAgent = () => {
   const audioFiltersRef = useRef<AudioFilters | null>(null);
   const [useWebRTC, setUseWebRTC] = useState(true); // Enable WebRTC by default
   const [isMuted, setIsMuted] = useState(false);
-  
+
   // Refs for callback access to current state values
   const conversationIdRef = useRef<string | null>(null);
   const callLogIdRef = useRef<number | null>(null);
@@ -116,7 +116,7 @@ const VoiceAgent = () => {
   const [language, setLanguage] = useState<string>("vi"); // Default to Vietnamese
   const [totalMinutesUsed, setTotalMinutesUsed] = useState<string>("0:00");
   const [dailyUserLimit, setDailyUserLimit] = useState<number>(10); // Default to 10, will be updated from backend
-  
+
   // Real-time usage tracking
   const [currentCallDuration, setCurrentCallDuration] = useState(0);
   const trackingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -166,7 +166,7 @@ const VoiceAgent = () => {
       webrtcFilters.cleanup();
       // Cleanup WebRTC filters
       webrtcFilters.cleanup();
-      
+
       // Cleanup usage tracking
       if (trackingIntervalRef.current) {
         clearInterval(trackingIntervalRef.current);
@@ -177,29 +177,45 @@ const VoiceAgent = () => {
   const conversation = useConversation({
     // Pass micMuted state to ElevenLabs hook for proper microphone control
     micMuted: isMuted,
-    
+
     onConnect: () => {
       console.log("🔥 ELEVENLABS CONNECTED - onConnect callback triggered!");
       console.log("ElevenLabs: Connected to voice agent");
       console.log("📍 onConnect: About to set isListening to true");
-      console.log("📍 onConnect: conversationId =", conversationId, "callLogId =", callLogId);
+      console.log(
+        "📍 onConnect: conversationId =",
+        conversationId,
+        "callLogId =",
+        callLogId,
+      );
       console.log("📍 onConnect: callStartTime =", callStartTime);
-      console.log("📍 onConnect: conversationIdRef.current =", conversationIdRef.current);
+      console.log(
+        "📍 onConnect: conversationIdRef.current =",
+        conversationIdRef.current,
+      );
       console.log("📍 onConnect: callLogIdRef.current =", callLogIdRef.current);
-      console.log("📍 onConnect: callStartTimeRef.current =", callStartTimeRef.current);
-      
+      console.log(
+        "📍 onConnect: callStartTimeRef.current =",
+        callStartTimeRef.current,
+      );
+
       // CRITICAL: Only set listening if we intentionally started a conversation
       const currentConversationId = conversationIdRef.current || conversationId;
       const currentCallLogId = callLogIdRef.current || callLogId;
       const currentCallStartTime = callStartTimeRef.current || callStartTime;
-      
+
       if (currentConversationId) {
-        console.log("📍 onConnect: Setting isListening=true because we have conversationId");
+        console.log(
+          "📍 onConnect: Setting isListening=true because we have conversationId",
+        );
         setIsListening(true);
-        
+
         // 🔥 CRITICAL FIX: Start tracking functions when ElevenLabs connects successfully
         if (currentCallStartTime && currentCallLogId) {
-          console.log("🚀 onConnect: Starting tracking functions with callStartTime:", currentCallStartTime);
+          console.log(
+            "🚀 onConnect: Starting tracking functions with callStartTime:",
+            currentCallStartTime,
+          );
           console.log("🚀 onConnect: callLogId:", currentCallLogId);
           startUsageTrackingWithTime(currentCallStartTime);
           startLimitMonitoringWithTime(currentCallStartTime);
@@ -207,22 +223,33 @@ const VoiceAgent = () => {
         } else if (currentCallLogId) {
           // Fallback with current time if callStartTime is not set
           const fallbackTime = new Date();
-          console.log("🔄 onConnect: Using fallback time for tracking:", fallbackTime);
+          console.log(
+            "🔄 onConnect: Using fallback time for tracking:",
+            fallbackTime,
+          );
           startUsageTrackingWithTime(fallbackTime);
           startLimitMonitoringWithTime(fallbackTime);
         } else {
-          console.warn("⚠️ onConnect: No callLogId available, cannot start tracking!");
+          console.warn(
+            "⚠️ onConnect: No callLogId available, cannot start tracking!",
+          );
         }
       } else {
-        console.log("🚨 onConnect: NOT setting isListening=true - no conversationId, probably auto-connect");
+        console.log(
+          "🚨 onConnect: NOT setting isListening=true - no conversationId, probably auto-connect",
+        );
         // Force disconnect if this is an unwanted auto-connect
-        console.log("🚨 onConnect: Force disconnecting unwanted auto-connection");
+        console.log(
+          "🚨 onConnect: Force disconnecting unwanted auto-connection",
+        );
         conversation.endSession().catch(console.error);
       }
       // No toast notification for connection
     },
     onDisconnect: () => {
-      console.log("🔥 ELEVENLABS DISCONNECTED - onDisconnect callback triggered!");
+      console.log(
+        "🔥 ELEVENLABS DISCONNECTED - onDisconnect callback triggered!",
+      );
       console.log("ElevenLabs: Disconnected from voice agent");
 
       // Stop limit monitoring
@@ -284,7 +311,7 @@ const VoiceAgent = () => {
         newStatus: status,
         currentIsListening: isListening,
         currentConversationId: conversationId,
-        currentCallLogId: callLogId
+        currentCallLogId: callLogId,
       });
     },
   });
@@ -392,11 +419,11 @@ const VoiceAgent = () => {
         const data = JSON.stringify({
           callLogId,
           userId: userId,
-          endReason: 'page_refresh'
+          endReason: "page_refresh",
         });
-        
+
         // navigator.sendBeacon is more reliable for page unload
-        navigator.sendBeacon('/api/call/end', data);
+        navigator.sendBeacon("/api/call/end", data);
         console.log(`Sent beacon to end call ${callLogId} for user ${userId}`);
       }
     };
@@ -490,15 +517,18 @@ const VoiceAgent = () => {
     return checkCallLimitsForUser(userId);
   };
 
-  const checkActiveLimits = async (overrideCallLogId?: number, overrideStartTime?: Date) => {
+  const checkActiveLimits = async (
+    overrideCallLogId?: number,
+    overrideStartTime?: Date,
+  ) => {
     // Calculate call duration using immediate values or React state
     const now = Date.now();
     let currentDurationSeconds = 0;
-    
+
     // Use override values if provided (for immediate state), otherwise use React state
     const activeCallLogId = overrideCallLogId || callLogId;
     const activeStartTime = overrideStartTime || callStartTime;
-    
+
     if (activeStartTime) {
       const currentDurationMs = now - activeStartTime.getTime();
       currentDurationSeconds = Math.floor(currentDurationMs / 1000);
@@ -512,10 +542,14 @@ const VoiceAgent = () => {
 
     // CRITICAL: If we have active ElevenLabs session but no call logging, emergency stop
     if (isListening && status === "connected" && conversationId && !callLogId) {
-      console.log("🚨 CRITICAL: Active session without call logging! Emergency stopping to prevent limit bypass...");
-      
+      console.log(
+        "🚨 CRITICAL: Active session without call logging! Emergency stopping to prevent limit bypass...",
+      );
+
       // Force stop the conversation immediately to prevent limit bypass
-      console.log("🛑 EMERGENCY: Force stopping conversation to prevent unlimited calling");
+      console.log(
+        "🛑 EMERGENCY: Force stopping conversation to prevent unlimited calling",
+      );
       if (conversation) {
         conversation.endSession();
       }
@@ -526,23 +560,33 @@ const VoiceAgent = () => {
 
     // CRITICAL FIX: Always run limit check if we have limitCheckInterval running
     // This prevents bypassing force-end when UI state is inconsistent
-    console.log("⏰ checkActiveLimits proceeding - force-end safety check active regardless of UI state");
+    console.log(
+      "⏰ checkActiveLimits proceeding - force-end safety check active regardless of UI state",
+    );
 
     // If we have partial state, continue with the check for safety
     if (!activeCallLogId || !activeStartTime) {
-      console.log("⚠️ Partial call state detected - continuing with limit check for safety:", { 
-        userId: !!userId, 
-        callLogId: !!activeCallLogId, 
-        callStartTime: !!activeStartTime,
-        isListening,
-        status,
-        conversationId: !!conversationId,
-        currentDuration: currentDurationSeconds > 0 ? `${currentDurationSeconds}s` : "unknown",
-        usingOverrides: !!(overrideCallLogId || overrideStartTime)
-      });
+      console.log(
+        "⚠️ Partial call state detected - continuing with limit check for safety:",
+        {
+          userId: !!userId,
+          callLogId: !!activeCallLogId,
+          callStartTime: !!activeStartTime,
+          isListening,
+          status,
+          conversationId: !!conversationId,
+          currentDuration:
+            currentDurationSeconds > 0
+              ? `${currentDurationSeconds}s`
+              : "unknown",
+          usingOverrides: !!(overrideCallLogId || overrideStartTime),
+        },
+      );
     }
 
-    console.log(`⏰ checkActiveLimits running: user ${userId}, duration ${currentDurationSeconds}s (${Math.floor(currentDurationSeconds/60)}m ${currentDurationSeconds%60}s)`);
+    console.log(
+      `⏰ checkActiveLimits running: user ${userId}, duration ${currentDurationSeconds}s (${Math.floor(currentDurationSeconds / 60)}m ${currentDurationSeconds % 60}s)`,
+    );
 
     try {
       const response = await fetch("/api/call/check-active-limits", {
@@ -561,7 +605,10 @@ const VoiceAgent = () => {
 
       if (!response.ok && response.status === 429) {
         // Limit exceeded during call - force end immediately
-        console.log("🚨 FORCE END: Call limit exceeded during active call:", data);
+        console.log(
+          "🚨 FORCE END: Call limit exceeded during active call:",
+          data,
+        );
 
         // Force disconnect immediately
         setIsListening(false);
@@ -576,7 +623,9 @@ const VoiceAgent = () => {
 
         // Stop ElevenLabs session immediately
         try {
-          console.log("🛑 Force stopping ElevenLabs session due to limit exceeded");
+          console.log(
+            "🛑 Force stopping ElevenLabs session due to limit exceeded",
+          );
           if (conversation) {
             await conversation.endSession();
           }
@@ -597,7 +646,7 @@ const VoiceAgent = () => {
         // Clear call state since it's forcefully ended
         setCallLogId(null);
         setCallStartTime(null);
-        
+
         // Stop monitoring intervals immediately
         if (limitCheckInterval) {
           clearInterval(limitCheckInterval);
@@ -620,16 +669,20 @@ const VoiceAgent = () => {
           ...data,
           currentCallDuration: currentDurationSeconds,
         });
-        
+
         // Handle warning messages for approaching limits
         if (data.warning) {
           console.log(`⚠️ Warning: ${data.warning.message}`, data.warning);
-          
+
           // Show different warning types
-          if (data.warning.type === 'user_limit_warning') {
-            console.log(`🟡 User limit warning: ${data.warning.secondsRemaining}s remaining`);
-          } else if (data.warning.type === 'system_limit_warning') {
-            console.log(`🟡 System limit warning: ${data.warning.secondsRemaining}s remaining`);
+          if (data.warning.type === "user_limit_warning") {
+            console.log(
+              `🟡 User limit warning: ${data.warning.secondsRemaining}s remaining`,
+            );
+          } else if (data.warning.type === "system_limit_warning") {
+            console.log(
+              `🟡 System limit warning: ${data.warning.secondsRemaining}s remaining`,
+            );
           }
         }
       }
@@ -652,8 +705,12 @@ const VoiceAgent = () => {
     const interval = setInterval(() => {
       // Log current call time for debugging
       if (callStartTime) {
-        const elapsed = Math.floor((Date.now() - callStartTime.getTime()) / 1000);
-        console.log(`📞 Call time: ${elapsed}s (${Math.floor(elapsed/60)}m ${elapsed%60}s)`);
+        const elapsed = Math.floor(
+          (Date.now() - callStartTime.getTime()) / 1000,
+        );
+        console.log(
+          `📞 Call time: ${elapsed}s (${Math.floor(elapsed / 60)}m ${elapsed % 60}s)`,
+        );
       }
       checkActiveLimits();
     }, 3000);
@@ -661,21 +718,35 @@ const VoiceAgent = () => {
   };
 
   // Start periodic limit checking with explicit start time
-  const startLimitMonitoringWithTime = (startTime: Date, callLogId?: number) => {
+  const startLimitMonitoringWithTime = (
+    startTime: Date,
+    callLogId?: number,
+  ) => {
     if (limitCheckInterval) {
       clearInterval(limitCheckInterval);
     }
 
-    console.log("🔄 Starting limit monitoring with explicit time - checking every 1 second, startTime:", startTime, "callLogId:", callLogId);
+    console.log(
+      "🔄 Starting limit monitoring with explicit time - checking every 1 second, startTime:",
+      startTime,
+      "callLogId:",
+      callLogId,
+    );
     // Check every 1 second during active call for immediate feedback
     const interval = setInterval(async () => {
       // Continue monitoring as long as we have startTime - don't auto-stop
       // This ensures force-end logic can trigger even if UI state is inconsistent
-      console.log("🔄 Limit check running - state:", { isListening, status, conversationId: !!conversationId });
-      
+      console.log("🔄 Limit check running - state:", {
+        isListening,
+        status,
+        conversationId: !!conversationId,
+      });
+
       // Log current call time for debugging
       const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
-      console.log(`📞 Call time: ${elapsed}s (${Math.floor(elapsed/60)}m ${elapsed%60}s)`);
+      console.log(
+        `📞 Call time: ${elapsed}s (${Math.floor(elapsed / 60)}m ${elapsed % 60}s)`,
+      );
       await checkActiveLimits(callLogId, startTime);
     }, 1000);
     setLimitCheckInterval(interval);
@@ -699,27 +770,27 @@ const VoiceAgent = () => {
       status,
       isListening,
       conversationId,
-      currentMicMuted: conversation?.micMuted
+      currentMicMuted: conversation?.micMuted,
     });
-    
+
     const newMutedState = !isMuted;
-    
+
     // Update UI state - this will automatically pass to ElevenLabs via micMuted prop
     setIsMuted(newMutedState);
-    
+
     if (newMutedState) {
       console.log("🔇 Microphone muted via ElevenLabs micMuted property");
     } else {
       console.log("🎤 Microphone unmuted via ElevenLabs micMuted property");
     }
-    
+
     console.log("🔄 State updated - isMuted:", newMutedState);
   };
 
   const startCallLog = async (conversationId: string, startTime?: Date) => {
     console.log("🆔 startCallLog called with conversationId:", conversationId);
     console.log("🆔 startCallLog called with userId:", userId);
-    
+
     if (!userId) {
       console.error("❌ CRITICAL: No userId available for call logging!");
       throw new Error("No user data available for call logging");
@@ -749,29 +820,46 @@ const VoiceAgent = () => {
 
     const data = await response.json();
     console.log("✅ API response data:", data);
-    
-    console.log("🔧 CRITICAL DEBUG: About to set state - callLogId:", data.callLogId, "startTime:", now);
-    
+
+    console.log(
+      "🔧 CRITICAL DEBUG: About to set state - callLogId:",
+      data.callLogId,
+      "startTime:",
+      now,
+    );
+
     // CRITICAL FIX: Ensure state is set immediately and logged
     const logId = data.callLogId;
     const callStartTimeValue = now;
-    
+
     // CRITICAL FIX: Use callback-based state updates to ensure immediate availability
     setCallLogId(logId);
     setCallStartTime(callStartTimeValue);
-    
-    console.log("🔧 CRITICAL DEBUG: State set completed - callLogId:", logId, "callStartTime:", callStartTimeValue);
-    console.log("🔧 VERIFICATION: callLogId state should now be truthy for limit monitoring");
-    
+
+    console.log(
+      "🔧 CRITICAL DEBUG: State set completed - callLogId:",
+      logId,
+      "callStartTime:",
+      callStartTimeValue,
+    );
+    console.log(
+      "🔧 VERIFICATION: callLogId state should now be truthy for limit monitoring",
+    );
+
     // Return the actual values for immediate use since React state is async
     const immediateState = {
       callLogId: logId,
-      callStartTime: callStartTimeValue
+      callStartTime: callStartTimeValue,
     };
-    console.log("🔧 IMMEDIATE STATE: Returning values for immediate use:", immediateState);
+    console.log(
+      "🔧 IMMEDIATE STATE: Returning values for immediate use:",
+      immediateState,
+    );
     console.log("Call log started with ElevenLabs sync:", data);
     console.log("🆔 Set callLogId:", data.callLogId, "callStartTime:", now);
-    console.log("🆔 State should now have callLogId and callStartTime for monitoring");
+    console.log(
+      "🆔 State should now have callLogId and callStartTime for monitoring",
+    );
 
     return { callLogId: logId, startTime: callStartTimeValue, immediateState };
   };
@@ -862,32 +950,39 @@ const VoiceAgent = () => {
       // Fetch total minutes used by this user
       if (userIdStr) {
         fetchUserTotalMinutes(userIdStr);
-        
+
         // Check call limits to get current daily user limit from backend
         setTimeout(() => {
           if (userIdStr) {
             checkCallLimitsForUser(userIdStr);
           }
         }, 1000); // Increased delay to ensure userId is set
-        
+
         // Check for orphaned calls after user verification (in case of refresh during call)
         setTimeout(async () => {
           try {
-            console.log(`🔍 Checking for orphaned calls for user ${userIdStr} after token verification...`);
-            const response = await fetch('/api/call/cleanup-orphaned', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ maxDurationMinutes: 0.5 }) // Very aggressive for fresh page loads
+            console.log(
+              `🔍 Checking for orphaned calls for user ${userIdStr} after token verification...`,
+            );
+            const response = await fetch("/api/call/cleanup-orphaned", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ maxDurationMinutes: 0.5 }), // Very aggressive for fresh page loads
             });
-            
+
             if (response.ok) {
               const data = await response.json();
               if (data.cleanedCount > 0) {
-                console.log(`🧹 Cleaned up ${data.cleanedCount} orphaned calls after page refresh/reload`);
+                console.log(
+                  `🧹 Cleaned up ${data.cleanedCount} orphaned calls after page refresh/reload`,
+                );
               }
             }
           } catch (error) {
-            console.error('Error cleaning up orphaned calls after token verification:', error);
+            console.error(
+              "Error cleaning up orphaned calls after token verification:",
+              error,
+            );
           }
         }, 2000); // Wait 2 seconds after token verification
       }
@@ -974,20 +1069,27 @@ const VoiceAgent = () => {
   const startUsageTracking = () => {
     console.log("📊 Starting real-time usage tracking...");
     setCurrentCallDuration(0);
-    
+
     if (trackingIntervalRef.current) {
       clearInterval(trackingIntervalRef.current);
     }
-    
+
     trackingIntervalRef.current = setInterval(() => {
       if (callStartTime) {
-        const currentDuration = Math.floor((Date.now() - callStartTime.getTime()) / 1000);
+        const currentDuration = Math.floor(
+          (Date.now() - callStartTime.getTime()) / 1000,
+        );
         setCurrentCallDuration(currentDuration);
-        console.log(`📊 [Usage Tracking] Call time: ${currentDuration}s (${Math.floor(currentDuration / 60)}m ${currentDuration % 60}s)`);
-        
+        console.log(
+          `📊 [Usage Tracking] Call time: ${currentDuration}s (${Math.floor(currentDuration / 60)}m ${currentDuration % 60}s)`,
+        );
+
         // Check if approaching user limit
-        if (currentDuration % 15 === 0) { // Every 15 seconds
-          console.log(`⏰ Usage check: ${currentDuration}s used, daily limit: ${dailyUserLimit * 60}s`);
+        if (currentDuration % 15 === 0) {
+          // Every 15 seconds
+          console.log(
+            `⏰ Usage check: ${currentDuration}s used, daily limit: ${dailyUserLimit * 60}s`,
+          );
         }
       }
     }, 3000); // Every 3 seconds
@@ -995,21 +1097,31 @@ const VoiceAgent = () => {
 
   // Start real-time usage tracking with explicit start time
   const startUsageTrackingWithTime = (startTime: Date) => {
-    console.log("📊 Starting real-time usage tracking with explicit time, startTime:", startTime);
+    console.log(
+      "📊 Starting real-time usage tracking with explicit time, startTime:",
+      startTime,
+    );
     setCurrentCallDuration(0);
-    
+
     if (trackingIntervalRef.current) {
       clearInterval(trackingIntervalRef.current);
     }
-    
+
     trackingIntervalRef.current = setInterval(() => {
-      const currentDuration = Math.floor((Date.now() - startTime.getTime()) / 1000);
+      const currentDuration = Math.floor(
+        (Date.now() - startTime.getTime()) / 1000,
+      );
       setCurrentCallDuration(currentDuration);
-      console.log(`📊 [Usage Tracking] Call time: ${currentDuration}s (${Math.floor(currentDuration / 60)}m ${currentDuration % 60}s)`);
-      
+      console.log(
+        `📊 [Usage Tracking] Call time: ${currentDuration}s (${Math.floor(currentDuration / 60)}m ${currentDuration % 60}s)`,
+      );
+
       // Check if approaching user limit
-      if (currentDuration % 15 === 0) { // Every 15 seconds
-        console.log(`⏰ Usage check: ${currentDuration}s used, daily limit: ${dailyUserLimit * 60}s`);
+      if (currentDuration % 15 === 0) {
+        // Every 15 seconds
+        console.log(
+          `⏰ Usage check: ${currentDuration}s used, daily limit: ${dailyUserLimit * 60}s`,
+        );
       }
     }, 3000); // Every 3 seconds
   };
@@ -1025,7 +1137,9 @@ const VoiceAgent = () => {
   };
 
   const toggleListening = async () => {
-    console.log("🔘 CRITICAL DEBUG: Toggle listening function called - entry point");
+    console.log(
+      "🔘 CRITICAL DEBUG: Toggle listening function called - entry point",
+    );
     console.log(
       "🔘 CRITICAL DEBUG: Toggle listening called - isListening:",
       isListening,
@@ -1036,8 +1150,15 @@ const VoiceAgent = () => {
     );
     console.log("🔘 CRITICAL DEBUG: conversationId:", conversationId);
     console.log("🔘 CRITICAL DEBUG: isProcessing:", isProcessing);
-    console.log("🔘 CRITICAL DEBUG: ElevenLabs conversation status:", conversation?.status);
-    console.log("🔘 CRITICAL DEBUG: Will go to STOP branch if:", isListening || conversationId, "(isListening OR conversationId)");
+    console.log(
+      "🔘 CRITICAL DEBUG: ElevenLabs conversation status:",
+      conversation?.status,
+    );
+    console.log(
+      "🔘 CRITICAL DEBUG: Will go to STOP branch if:",
+      isListening || conversationId,
+      "(isListening OR conversationId)",
+    );
 
     // Prevent concurrent operations
     if (isProcessing) {
@@ -1062,7 +1183,7 @@ const VoiceAgent = () => {
         // Stop all tracking first
         stopUsageTracking();
         stopLimitMonitoring();
-        
+
         // End call logging
         await endCallLog("user_stop");
 
@@ -1079,7 +1200,7 @@ const VoiceAgent = () => {
     }
 
     console.log("🔍 CRITICAL: About to start conversation section");
-    
+
     // Start conversation
     try {
       console.log("🚀 Starting conversation process...");
@@ -1133,6 +1254,7 @@ const VoiceAgent = () => {
           greeting_message: userData.greeting_message,
           env: userData.env,
           language: language,
+          token: token,
         },
         overrides: {
           agent: {
@@ -1143,60 +1265,109 @@ const VoiceAgent = () => {
 
       console.log("Starting ElevenLabs session...");
       console.log("Session options:", JSON.stringify(sessionOptions, null, 2));
-      
+
       console.log("🔍 DEBUG: About to call conversation.startSession");
       const newConversationId = await conversation.startSession(sessionOptions);
-      console.log("🔍 DEBUG: startSession completed, returned:", newConversationId);
+      console.log(
+        "🔍 DEBUG: startSession completed, returned:",
+        newConversationId,
+      );
       console.log("ElevenLabs startSession returned:", newConversationId);
 
       console.log("Conversation started with ID:", newConversationId);
       console.log("📍 Checkpoint 1: ElevenLabs session started successfully");
-      console.log("📍 Checkpoint 1.5: About to proceed to call logging section");
+      console.log(
+        "📍 Checkpoint 1.5: About to proceed to call logging section",
+      );
 
       // CRITICAL: Start call logging BEFORE setting UI states to ensure monitoring starts immediately
-      console.log("🚧 BEFORE startCallLog - newConversationId:", newConversationId);
+      console.log(
+        "🚧 BEFORE startCallLog - newConversationId:",
+        newConversationId,
+      );
       console.log("🚧 BEFORE startCallLog - userId:", userId);
       console.log("🚧 BEFORE startCallLog - userData:", userData);
-      
+
       try {
-        console.log("🚀 About to start call logging for conversation:", newConversationId);
+        console.log(
+          "🚀 About to start call logging for conversation:",
+          newConversationId,
+        );
         console.log("🚀 Current userId for logging:", userId);
         console.log("🚀 Starting conversation process");
-        
+
         // Create start time here to use consistently
         const callStartNow = new Date();
         console.log("🕐 Call start time:", callStartNow);
-        
+
         // Force immediate call logging execution with consistent time
-        console.log("🚀 CRITICAL DEBUG: About to call startCallLog with:", { newConversationId, callStartNow });
-        const callLogResult = await startCallLog(newConversationId, callStartNow);
-        console.log("✅ CRITICAL DEBUG: Call logging completed successfully, result:", callLogResult);
-        console.log("✅ CRITICAL DEBUG: callLogId should now be set, callStartTime should be initialized");
-        
+        console.log("🚀 CRITICAL DEBUG: About to call startCallLog with:", {
+          newConversationId,
+          callStartNow,
+        });
+        const callLogResult = await startCallLog(
+          newConversationId,
+          callStartNow,
+        );
+        console.log(
+          "✅ CRITICAL DEBUG: Call logging completed successfully, result:",
+          callLogResult,
+        );
+        console.log(
+          "✅ CRITICAL DEBUG: callLogId should now be set, callStartTime should be initialized",
+        );
+
         // Use immediate state values for tracking instead of React state
         const { immediateState } = callLogResult;
-        console.log("🔄 CRITICAL DEBUG: Using immediate state for tracking:", immediateState);
-        
+        console.log(
+          "🔄 CRITICAL DEBUG: Using immediate state for tracking:",
+          immediateState,
+        );
+
         // Start both tracking systems with immediate state values
-        console.log("🔄 CRITICAL DEBUG: Starting usage tracking with immediate state");
+        console.log(
+          "🔄 CRITICAL DEBUG: Starting usage tracking with immediate state",
+        );
         startUsageTrackingWithTime(immediateState.callStartTime);
-        console.log("🔄 CRITICAL DEBUG: Usage tracking started with immediate state");
-        
-        console.log("🔄 CRITICAL DEBUG: Starting limit monitoring with immediate state");
-        startLimitMonitoringWithTime(immediateState.callStartTime, immediateState.callLogId);
-        console.log("🔄 CRITICAL DEBUG: Limit monitoring started with immediate state");
-        console.log("🎯 CRITICAL DEBUG: Both tracking systems running with immediate values!");
+        console.log(
+          "🔄 CRITICAL DEBUG: Usage tracking started with immediate state",
+        );
+
+        console.log(
+          "🔄 CRITICAL DEBUG: Starting limit monitoring with immediate state",
+        );
+        startLimitMonitoringWithTime(
+          immediateState.callStartTime,
+          immediateState.callLogId,
+        );
+        console.log(
+          "🔄 CRITICAL DEBUG: Limit monitoring started with immediate state",
+        );
+        console.log(
+          "🎯 CRITICAL DEBUG: Both tracking systems running with immediate values!",
+        );
       } catch (error) {
         console.error("❌ CRITICAL: Call logging failed:", error);
         console.error("❌ Error details:", error);
-        console.error("❌ Error stack:", error instanceof Error ? error.stack : 'No stack');
-        console.error("❌ Error message:", error instanceof Error ? error.message : 'Unknown error');
+        console.error(
+          "❌ Error stack:",
+          error instanceof Error ? error.stack : "No stack",
+        );
+        console.error(
+          "❌ Error message:",
+          error instanceof Error ? error.message : "Unknown error",
+        );
         console.error("❌ Error type:", typeof error);
-        console.error("❌ Full error object:", JSON.stringify(error, Object.getOwnPropertyNames(error)));
-        
+        console.error(
+          "❌ Full error object:",
+          JSON.stringify(error, Object.getOwnPropertyNames(error)),
+        );
+
         // Don't throw error, continue but log the issue
-        console.warn("⚠️ Continuing without call logging - this will break limit monitoring!");
-        
+        console.warn(
+          "⚠️ Continuing without call logging - this will break limit monitoring!",
+        );
+
         // Force fallback tracking to at least see logs
         console.log("🔄 FALLBACK: Starting tracking without call log");
         const fallbackStartTime = new Date();
@@ -1208,10 +1379,17 @@ const VoiceAgent = () => {
       setConversationId(newConversationId);
       setIsListening(true);
       setIsMuted(false); // Reset mute state for new conversation
-      console.log("📍 Checkpoint 3: Set isListening to true after startSession and call logging");
-      console.log("📍 Checkpoint 3: callLogId =", callLogId, "callStartTime =", callStartTime);
+      console.log(
+        "📍 Checkpoint 3: Set isListening to true after startSession and call logging",
+      );
+      console.log(
+        "📍 Checkpoint 3: callLogId =",
+        callLogId,
+        "callStartTime =",
+        callStartTime,
+      );
       console.log("🎉 CONVERSATION STARTED! Should see 3-second logs now...");
-      
+
       // 🔥 DIRECT FIX: Start tracking immediately after conversation setup
       // Don't wait for onConnect callback since it's not reliable
       console.log("🚀 DIRECT: Starting tracking functions immediately...");
@@ -1282,17 +1460,26 @@ const VoiceAgent = () => {
         {(() => {
           console.log("🔍 Mute button visibility check:", {
             status,
-            isListening, 
+            isListening,
             conversationId,
             limitCheckInterval: !!limitCheckInterval,
             trackingInterval: !!trackingIntervalRef.current,
-            shouldShow: (status === "connected" || isListening || conversationId || limitCheckInterval || trackingIntervalRef.current)
+            shouldShow:
+              status === "connected" ||
+              isListening ||
+              conversationId ||
+              limitCheckInterval ||
+              trackingIntervalRef.current,
           });
           return null;
         })()}
-        
+
         {/* Mute/Unmute Button - show when any conversation activity */}
-        {(status === "connected" || isListening || conversationId || limitCheckInterval || trackingIntervalRef.current) && (
+        {(status === "connected" ||
+          isListening ||
+          conversationId ||
+          limitCheckInterval ||
+          trackingIntervalRef.current) && (
           <div className="flex justify-center mb-4 relative z-10">
             <button
               onClick={() => {
@@ -1302,7 +1489,7 @@ const VoiceAgent = () => {
               onMouseDown={() => console.log("🔘 MOUSE DOWN EVENT")}
               onMouseUp={() => console.log("🔘 MOUSE UP EVENT")}
               type="button"
-              style={{ pointerEvents: 'auto', zIndex: 999 }}
+              style={{ pointerEvents: "auto", zIndex: 999 }}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all cursor-pointer relative ${
                 isMuted
                   ? "bg-red-100 text-red-800 border border-red-300 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700"
@@ -1310,17 +1497,38 @@ const VoiceAgent = () => {
               }`}
             >
               {isMuted ? (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.82L4.821 14H3a1 1 0 01-1-1V7a1 1 0 011-1h1.821l3.562-2.82a1 1 0 011.617.82zM2.828 2.828a1 1 0 011.415 0L17.657 16.243a1 1 0 01-1.414 1.414L2.828 4.243a1 1 0 010-1.415z" clipRule="evenodd" />
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9.383 3.076A1 1 0 0110 4v12a1 1 0 01-1.617.82L4.821 14H3a1 1 0 01-1-1V7a1 1 0 011-1h1.821l3.562-2.82a1 1 0 011.617.82zM2.828 2.828a1 1 0 011.415 0L17.657 16.243a1 1 0 01-1.414 1.414L2.828 4.243a1 1 0 010-1.415z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               ) : (
-                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clipRule="evenodd" />
+                <svg
+                  className="w-5 h-5"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               )}
               {isMuted ? "Mở tiếng" : "Tắt tiếng"}
               {(() => {
-                console.log("🔍 Button render - isMuted:", isMuted, "text:", isMuted ? "Mở tiếng" : "Tắt tiếng");
+                console.log(
+                  "🔍 Button render - isMuted:",
+                  isMuted,
+                  "text:",
+                  isMuted ? "Mở tiếng" : "Tắt tiếng",
+                );
                 return null;
               })()}
             </button>
@@ -1364,8 +1572,12 @@ const VoiceAgent = () => {
                       : "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
                   }`}
                 >
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
+                  <svg
+                    className="w-3 h-3"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
                   </svg>
                   {useWebRTC ? "WebRTC" : "Legacy"}
                 </button>
@@ -1373,7 +1585,11 @@ const VoiceAgent = () => {
                   value={noiseSensitivity}
                   onChange={(e) =>
                     setNoiseSensitivity(
-                      e.target.value as "low" | "medium" | "high" | "aggressive",
+                      e.target.value as
+                        | "low"
+                        | "medium"
+                        | "high"
+                        | "aggressive",
                     )
                   }
                   className="px-2 py-1 text-xs rounded border bg-background"
@@ -1392,7 +1608,8 @@ const VoiceAgent = () => {
         {false && isListening && currentCallDuration > 0 && (
           <div className="flex justify-center mb-4">
             <div className="px-3 py-1 text-xs rounded border bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700">
-              Thời gian gọi: {Math.floor(currentCallDuration / 60)}m {currentCallDuration % 60}s
+              Thời gian gọi: {Math.floor(currentCallDuration / 60)}m{" "}
+              {currentCallDuration % 60}s
             </div>
           </div>
         )}
@@ -1415,12 +1632,16 @@ const VoiceAgent = () => {
       {/* Warning notification - positioned at bottom center when active */}
       {callLimitsInfo && callLimitsInfo.warning && (
         <div className="fixed bottom-16 left-4 right-4 z-50 md:bottom-20 md:max-w-md md:mx-auto">
-          <div className={`p-3 rounded-lg border backdrop-blur-sm text-center ${
-            callLimitsInfo.warning.type === 'user_limit_warning' 
-              ? 'bg-orange-50/90 border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-200'
-              : 'bg-yellow-50/90 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200'
-          }`}>
-            <p className="text-sm font-medium">⚠️ {callLimitsInfo.warning.message}</p>
+          <div
+            className={`p-3 rounded-lg border backdrop-blur-sm text-center ${
+              callLimitsInfo.warning.type === "user_limit_warning"
+                ? "bg-orange-50/90 border-orange-200 text-orange-800 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-200"
+                : "bg-yellow-50/90 border-yellow-200 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200"
+            }`}
+          >
+            <p className="text-sm font-medium">
+              ⚠️ {callLimitsInfo.warning.message}
+            </p>
           </div>
         </div>
       )}
