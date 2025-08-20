@@ -615,11 +615,12 @@ const VoiceAgent = () => {
         setConversationId(null);
         setAudioLevel(0);
 
-        // Clear the interval
-        if (limitCheckInterval) {
-          clearInterval(limitCheckInterval);
-          setLimitCheckInterval(null);
-        }
+        // CRITICAL FIX: Stop all monitoring IMMEDIATELY to prevent infinite loops
+        console.log("🔥 CRITICAL: Force-ending call due to limit exceeded - stopping ALL monitoring");
+        
+        // Clear intervals using the proper function
+        stopLimitMonitoring();
+        stopUsageTracking();
 
         // Stop ElevenLabs session immediately
         try {
@@ -646,16 +647,6 @@ const VoiceAgent = () => {
         // Clear call state since it's forcefully ended
         setCallLogId(null);
         setCallStartTime(null);
-
-        // Stop monitoring intervals immediately
-        if (limitCheckInterval) {
-          clearInterval(limitCheckInterval);
-          setLimitCheckInterval(null);
-        }
-        if (trackingIntervalRef.current) {
-          clearInterval(trackingIntervalRef.current);
-          trackingIntervalRef.current = null;
-        }
 
         // Optionally show toast notification for user
         console.log(`🔚 Call force-ended: ${data.reason} - ${data.message}`);
@@ -758,8 +749,12 @@ const VoiceAgent = () => {
     if (limitCheckInterval) {
       clearInterval(limitCheckInterval);
       setLimitCheckInterval(null);
+      console.log("✅ Limit monitoring interval cleared successfully");
     }
+    
+    // Clear call start time to prevent any further monitoring
     setCallStartTime(null);
+    console.log("✅ Call start time cleared - no more monitoring possible");
   };
 
   // Toggle mute/unmute microphone
