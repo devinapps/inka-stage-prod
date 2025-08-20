@@ -3,14 +3,14 @@
 ## Overview
 This project is a full-stack voice AI agent application called "Inka", offering a voice-activated AI assistant with speech recognition and text-to-speech capabilities. Built with React and Express.js, it features a modern UI using shadcn/ui and Tailwind CSS. The application aims to provide an engaging user experience through advanced voice AI integration, including database-managed call limit system. The business vision is to deliver a seamless, intuitive, and scalable voice AI solution with configurable operational limits.
 
-## Recent Changes (August 14, 2025)
-- **WebRTC Integration**: Implemented advanced WebRTC-based noise filtering system with 7-stage audio processing
-- **Enhanced Noise Filtering**: Added aggressive mode and 4 noise sensitivity levels (low/medium/high/aggressive)
-- **Audio Processing Chain**: Notch filter, high-pass, speech enhancer, low-pass, compressor, noise gate, limiter
-- **User Controls**: WebRTC toggle button and enhanced noise level controls in UI
-- **ElevenLabs Optimization**: WebRTC filters specifically tuned for voice AI conversations
-- **Fallback System**: Legacy audio filters as backup when WebRTC is disabled
-- **Real-time Monitoring**: Audio metrics tracking for compression gain, noise floor, gate status
+## Recent Changes (August 20, 2025)
+- **Critical Bug Fix**: Fixed orphaned calls cleanup system incorrectly ending active calls at 2-minute mark
+- **Multiple Intervals Fix**: Resolved duplicate call monitoring causing wrong timeout warnings  
+- **UI Cleanup**: Completely removed noise filtering controls (always enabled with "high" sensitivity)
+- **WebRTC Always-On**: Default WebRTC audio filtering with 7-stage processing for noisy environments
+- **Cleanup Threshold**: Increased orphaned call detection from 2 to 30 minutes to prevent premature disconnections
+- **Browser Disconnect Fix**: Fixed false "browser_disconnect" markings for legitimate active calls
+- **Call Limits**: Enhanced force-end logic with proper interval clearing and accurate duration tracking
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.

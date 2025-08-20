@@ -498,7 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Cleanup orphaned calls - end calls that have been active too long
   app.post("/api/call/cleanup-orphaned", async (req, res) => {
     try {
-      const { maxDurationMinutes = 2.0 } = req.body; // Default max 2 minutes to allow for real calls
+      const { maxDurationMinutes = 30 } = req.body; // Increased to 30 minutes to allow for longer legitimate calls
       
       const cutoffTime = new Date(Date.now() - maxDurationMinutes * 60 * 1000);
       
@@ -520,7 +520,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const minutes = Math.floor(durationSeconds / 60);
         const seconds = durationSeconds % 60;
-        console.log(`🧹 Auto-ended orphaned call ${call.id} for user ${call.userId}, duration: ${durationSeconds}s (${minutes}m ${seconds}s) - likely browser disconnect`);
+        console.log(`🧹 Auto-ended orphaned call ${call.id} for user ${call.userId}, duration: ${durationSeconds}s (${minutes}m ${seconds}s) - exceeded ${maxDurationMinutes} minutes orphan threshold`);
         cleanedCount++;
       }
       
