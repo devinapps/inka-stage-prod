@@ -1,8 +1,8 @@
-import { QueryClient } from "@tanstack/react-query";
+import { QueryClient, type QueryFunctionContext } from "@tanstack/react-query";
 
 // Default fetcher function that works with the backend
-const defaultQueryFn = async ({ queryKey }: { queryKey: string[] }) => {
-  const url = queryKey[0];
+const defaultQueryFn = async ({ queryKey }: QueryFunctionContext) => {
+  const url = queryKey[0] as string;
   const res = await fetch(url);
   
   if (!res.ok) {
