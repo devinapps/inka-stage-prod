@@ -621,7 +621,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('Verifying token...');
       
-      const response = await fetch('https://incard.biz/api/verify-token', {
+      const response = await fetch('https://stage.incard.biz/api/verify-token', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
