@@ -418,15 +418,37 @@ const VoiceAgent = () => {
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden" && callLogId) {
-        console.log("Page hidden with active call, logging...");
-        // Could implement background heartbeat here
+      if (document.visibilityState === "hidden" && callLogId && userId) {
+        console.log("Page hidden with active call, ending...");
+        const data = JSON.stringify({
+          callLogId,
+          userId: userId,
+          endReason: "page_hidden",
+        });
+        navigator.sendBeacon("/api/call/end", data);
+        console.log(`Sent beacon to end call ${callLogId} for page hidden`);
       }
     };
 
     // Add event listeners
     window.addEventListener("beforeunload", handleBeforeUnload);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    // Handle browser back/forward navigation
+    const handlePopState = () => {
+      console.log("Browser navigation detected, ending active call...");
+      if (callLogId && userId) {
+        const data = JSON.stringify({
+          callLogId,
+          userId: userId,
+          endReason: "navigation",
+        });
+        navigator.sendBeacon("/api/call/end", data);
+        console.log(`Sent beacon to end call ${callLogId} for navigation`);
+      }
+    };
+    
+    window.addEventListener("popstate", handlePopState);
 
     return () => {
       // Cleanup when component unmounts - but don't end active calls unnecessarily
@@ -435,6 +457,7 @@ const VoiceAgent = () => {
       // Remove event listeners
       window.removeEventListener("beforeunload", handleBeforeUnload);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("popstate", handlePopState);
 
       // Don't automatically end calls or reset states on component unmount
       // This prevents stopping calls when components re-render
