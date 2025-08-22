@@ -113,6 +113,7 @@ const VoiceAgent = () => {
   const conversationIdRef = useRef<string | null>(null);
   const callLogIdRef = useRef<number | null>(null);
   const callStartTimeRef = useRef<Date | null>(null);
+  const userIdRef = useRef<string | null>(null);
 
   // Extract token and language from URL on component mount
   const [token, setToken] = useState<string>("");
@@ -139,6 +140,10 @@ const VoiceAgent = () => {
   useEffect(() => {
     callStartTimeRef.current = callStartTime;
   }, [callStartTime]);
+
+  useEffect(() => {
+    userIdRef.current = userId;
+  }, [userId]);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -403,30 +408,34 @@ const VoiceAgent = () => {
   useEffect(() => {
     const handleBeforeUnload = () => {
       console.log("Page unloading, ending active call...");
-      if (callLogId && userId) {
+      const currentCallLogId = callLogIdRef.current || callLogId;
+      const currentUserId = userIdRef.current || userId;
+      if (currentCallLogId && currentUserId) {
         // Use navigator.sendBeacon for more reliable cleanup
         const data = JSON.stringify({
-          callLogId,
-          userId: userId,
+          callLogId: currentCallLogId,
+          userId: currentUserId,
           endReason: "page_refresh",
         });
 
         // navigator.sendBeacon is more reliable for page unload
         navigator.sendBeacon("/api/call/end", data);
-        console.log(`Sent beacon to end call ${callLogId} for user ${userId}`);
+        console.log(`Sent beacon to end call ${currentCallLogId} for user ${currentUserId}`);
       }
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === "hidden" && callLogId && userId) {
+      const currentCallLogId = callLogIdRef.current || callLogId;
+      const currentUserId = userIdRef.current || userId;
+      if (document.visibilityState === "hidden" && currentCallLogId && currentUserId) {
         console.log("Page hidden with active call, ending...");
         const data = JSON.stringify({
-          callLogId,
-          userId: userId,
+          callLogId: currentCallLogId,
+          userId: currentUserId,
           endReason: "page_hidden",
         });
         navigator.sendBeacon("/api/call/end", data);
-        console.log(`Sent beacon to end call ${callLogId} for page hidden`);
+        console.log(`Sent beacon to end call ${currentCallLogId} for page hidden`);
       }
     };
 
@@ -437,14 +446,16 @@ const VoiceAgent = () => {
     // Handle browser back/forward navigation
     const handlePopState = () => {
       console.log("Browser navigation detected, ending active call...");
-      if (callLogId && userId) {
+      const currentCallLogId = callLogIdRef.current || callLogId;
+      const currentUserId = userIdRef.current || userId;
+      if (currentCallLogId && currentUserId) {
         const data = JSON.stringify({
-          callLogId,
-          userId: userId,
+          callLogId: currentCallLogId,
+          userId: currentUserId,
           endReason: "navigation",
         });
         navigator.sendBeacon("/api/call/end", data);
-        console.log(`Sent beacon to end call ${callLogId} for navigation`);
+        console.log(`Sent beacon to end call ${currentCallLogId} for navigation`);
       }
     };
     

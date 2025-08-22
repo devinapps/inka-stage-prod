@@ -3,14 +3,14 @@
 ## Overview
 This project is a full-stack voice AI agent application called "Inka", offering a voice-activated AI assistant with speech recognition and text-to-speech capabilities. Built with React and Express.js, it features a modern UI using shadcn/ui and Tailwind CSS. The application aims to provide an engaging user experience through advanced voice AI integration, including database-managed call limit system. The business vision is to deliver a seamless, intuitive, and scalable voice AI solution with configurable operational limits.
 
-## Recent Changes (August 20, 2025)
-- **Critical Bug Fix**: Fixed orphaned calls cleanup system incorrectly ending active calls at 2-minute mark
-- **Multiple Intervals Fix**: Resolved duplicate call monitoring causing wrong timeout warnings  
-- **UI Cleanup**: Completely removed noise filtering controls (always enabled with "high" sensitivity)
-- **WebRTC Always-On**: Default WebRTC audio filtering with 7-stage processing for noisy environments
-- **Cleanup Threshold**: Increased orphaned call detection from 2 to 30 minutes to prevent premature disconnections
-- **Browser Disconnect Fix**: Fixed false "browser_disconnect" markings for legitimate active calls
-- **Call Limits**: Enhanced force-end logic with proper interval clearing and accurate duration tracking
+## Recent Changes (August 22, 2025)
+- **Critical Browser Disconnect Fix**: Fixed beforeunload events not ending calls due to React state timing issues
+- **Enhanced Event Detection**: Added popstate and enhanced visibilitychange handlers for comprehensive navigation coverage
+- **Refs-based Event Handling**: Used useRef for callLogId/userId in event handlers to ensure data availability during page unload
+- **Language Localization**: Implemented multi-language support for daily usage text and mute buttons via query string
+- **Multiple Detection Layers**: Now has 4 layers: beforeunload, visibilitychange, popstate, and 30-minute cleanup service
+- **Event Reason Tracking**: Added navigation, page_hidden, page_refresh endReasons for better analytics
+- **Orphaned Call Prevention**: Fixed cleanup system threshold from 2→30 minutes preventing false disconnections
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
