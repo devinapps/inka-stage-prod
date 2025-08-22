@@ -1231,7 +1231,6 @@ const VoiceAgent = () => {
       const sessionOptions: any = {
         signedUrl: signedUrl,
         agentId: ELEVENLABS_CONFIG.voiceAgentId,
-        voiceId: currentContent.voiceId,
         connectionType: "webrtc", // Enable WebRTC connection for ElevenLabs
         dynamicVariables: {
           userid: userData.user_id,
@@ -1250,6 +1249,9 @@ const VoiceAgent = () => {
         overrides: {
           agent: {
             firstMessage: currentContent.firstMessage,
+          },
+          tts: {
+            voice_id: currentContent.voiceId, 
           },
         },
       };
