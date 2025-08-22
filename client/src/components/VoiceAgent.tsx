@@ -419,7 +419,8 @@ const VoiceAgent = () => {
         });
 
         // navigator.sendBeacon is more reliable for page unload
-        navigator.sendBeacon("/api/call/end", data);
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon("/api/call/end", blob);
         console.log(`Sent beacon to end call ${currentCallLogId} for user ${currentUserId}`);
       }
     };
@@ -434,7 +435,8 @@ const VoiceAgent = () => {
           userId: currentUserId,
           endReason: "page_hidden",
         });
-        navigator.sendBeacon("/api/call/end", data);
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon("/api/call/end", blob);
         console.log(`Sent beacon to end call ${currentCallLogId} for page hidden`);
       }
     };
@@ -454,7 +456,8 @@ const VoiceAgent = () => {
           userId: currentUserId,
           endReason: "navigation",
         });
-        navigator.sendBeacon("/api/call/end", data);
+        const blob = new Blob([data], { type: 'application/json' });
+        navigator.sendBeacon("/api/call/end", blob);
         console.log(`Sent beacon to end call ${currentCallLogId} for navigation`);
       }
     };
