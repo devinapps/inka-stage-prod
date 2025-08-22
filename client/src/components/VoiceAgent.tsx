@@ -60,7 +60,7 @@ const LANGUAGE_CONTENT = {
     dailyUsage: "Tổng gọi hôm nay: {used} / {limit} phút",
     muteButton: "Tắt tiếng",
     unmuteButton: "Mở tiếng",
-    voiceId:"CexKxuK9j3IaH2VqJ698",
+    voiceId:"cgSgspJ2msm6clMCkdW9",
     firstMessage:
       "Em chào {{greeting_message}} {{user_name}}, em là INKA - một trợ lý cá nhân. {{user_name}} muốn em giúp gì trong hôm nay?",
     features: [
@@ -1251,11 +1251,10 @@ const VoiceAgent = () => {
             firstMessage: currentContent.firstMessage,
           },
           tts: {
-            voice_id: currentContent.voiceId, 
+            voiceId: currentContent.voiceId, 
           },
         },
       };
-
       console.log("Starting ElevenLabs session...");
       console.log("Session options:", JSON.stringify(sessionOptions, null, 2));
 
