@@ -1,9 +1,31 @@
 /**
  * WebRTC-based Advanced Audio Filtering System
- * Optimized for ElevenLabs Voice Agent conversations with configurable noise filtering levels
+ * Optimized for ElevenLabs Voice Agent conversations with real-time parameter adjustment
  */
 
-export type NoiseFilterLevel = 'low' | 'medium' | 'high' | 'aggressive';
+export interface AudioFilterParams {
+  // High-pass filter
+  highPassFreq: number;
+  highPassQ: number;
+  
+  // Speech enhancer
+  speechFreq: number;
+  speechQ: number;
+  speechGain: number;
+  
+  // Low-pass filter
+  lowPassFreq: number;
+  lowPassQ: number;
+  
+  // Compressor
+  compressorThreshold: number;
+  compressorRatio: number;
+  compressorAttack: number;
+  compressorRelease: number;
+  
+  // Noise gate
+  noiseGateThreshold: number;
+}
 
 interface WebRTCFilterConfig {
   echoCancellation: boolean;
@@ -38,24 +60,38 @@ export class WebRTCAdvancedFilters {
   private limiter: DynamicsCompressorNode | null = null;
 
   // WebRTC-specific parameters
-  private noiseGateThreshold = 0.01;
-  private compressionRatio = 4;
   private isProcessing = false;
+  
+  // Configurable filter parameters optimized for human conversation
+  public filterParams: AudioFilterParams = {
+    highPassFreq: 150,        // Remove low-freq noise while preserving voice
+    highPassQ: 1.2,           // Moderate rolloff
+    speechFreq: 2500,         // Voice clarity enhancement frequency
+    speechQ: 1.5,             // Clear enhancement
+    speechGain: 3,            // Moderate voice boost
+    lowPassFreq: 7000,        // Remove high-freq noise
+    lowPassQ: 1.0,            // Smooth rolloff
+    compressorThreshold: -20, // Gentle compression
+    compressorRatio: 3,       // Moderate compression
+    compressorAttack: 0.003,  // Natural attack
+    compressorRelease: 0.1,   // Smooth release
+    noiseGateThreshold: 0.015 // Balanced gate
+  };
 
   constructor() {
     this.audioContext = new AudioContext();
     console.log('🎙️ WebRTC Advanced Audio Filters initialized');
   }
 
-  private getWebRTCConstraints(level: NoiseFilterLevel): WebRTCFilterConfig {
+  private getWebRTCConstraints(): WebRTCFilterConfig {
     const baseConstraints: WebRTCFilterConfig = {
       echoCancellation: true,
       noiseSuppression: true,
       autoGainControl: true,
-      voiceIsolation: false,
+      voiceIsolation: true,
     };
 
-    // Advanced Chrome constraints
+    // Advanced Chrome constraints for optimal human conversation
     const advancedConstraints = {
       googEchoCancellation: true,
       googNoiseSuppression: true,
@@ -67,84 +103,47 @@ export class WebRTCAdvancedFilters {
       googTypingNoiseDetection: true,
     };
 
-    switch (level) {
-      case 'low':
-        return {
-          ...baseConstraints,
-          noiseSuppression: false,
-          autoGainControl: false,
-        };
-      
-      case 'medium':
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-          googNoiseSuppression2: false,
-          googAutoGainControl2: false,
-        };
-      
-      case 'high':
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-          voiceIsolation: true,
-        };
-      
-      case 'aggressive':
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-          voiceIsolation: true,
-          noiseSuppression: true,
-        };
-      
-      default:
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-          voiceIsolation: true,
-        };
-    }
+    return {
+      ...baseConstraints,
+      ...advancedConstraints,
+    };
   }
 
-  private createAdvancedFilterChain(level: NoiseFilterLevel): void {
+  private createAdvancedFilterChain(): void {
     if (!this.audioContext) return;
-
-    // Configure filters based on level
-    const config = this.getFilterConfig(level);
 
     // 1. High-pass filter
     this.highPassFilter = this.audioContext.createBiquadFilter();
     this.highPassFilter.type = 'highpass';
-    this.highPassFilter.frequency.value = config.highPassFreq;
-    this.highPassFilter.Q.value = config.highPassQ;
+    this.highPassFilter.frequency.value = this.filterParams.highPassFreq;
+    this.highPassFilter.Q.value = this.filterParams.highPassQ;
 
     // 2. Notch filter for electrical hum elimination
     this.notchFilter = this.audioContext.createBiquadFilter();
     this.notchFilter.type = 'notch';
     this.notchFilter.frequency.value = 60; // 60Hz hum removal
-    this.notchFilter.Q.value = config.notchQ;
+    this.notchFilter.Q.value = 30; // Sharp notch
 
     // 3. Speech enhancer
     this.speechEnhancer = this.audioContext.createBiquadFilter();
     this.speechEnhancer.type = 'peaking';
-    this.speechEnhancer.frequency.value = config.speechFreq;
-    this.speechEnhancer.Q.value = config.speechQ;
-    this.speechEnhancer.gain.value = config.speechGain;
+    this.speechEnhancer.frequency.value = this.filterParams.speechFreq;
+    this.speechEnhancer.Q.value = this.filterParams.speechQ;
+    this.speechEnhancer.gain.value = this.filterParams.speechGain;
 
     // 4. Low-pass filter
     this.lowPassFilter = this.audioContext.createBiquadFilter();
     this.lowPassFilter.type = 'lowpass';
-    this.lowPassFilter.frequency.value = config.lowPassFreq;
-    this.lowPassFilter.Q.value = config.lowPassQ;
+    this.lowPassFilter.frequency.value = this.filterParams.lowPassFreq;
+    this.lowPassFilter.Q.value = this.filterParams.lowPassQ;
 
     // 5. Advanced compressor
     this.compressor = this.audioContext.createDynamicsCompressor();
-    this.compressor.threshold.value = config.compressorThreshold;
-    this.compressor.knee.value = config.compressorKnee;
-    this.compressor.ratio.value = config.compressorRatio;
-    this.compressor.attack.value = config.compressorAttack;
-    this.compressor.release.value = config.compressorRelease;
+    this.compressor.threshold.value = this.filterParams.compressorThreshold;
+    this.compressor.knee.value = 6; // Smooth compression
+    this.compressor.ratio.value = this.filterParams.compressorRatio;
+    this.compressor.attack.value = this.filterParams.compressorAttack;
+    this.compressor.release.value = this.filterParams.compressorRelease;
 
     // 6. Noise gate
     this.noiseGate = this.audioContext.createGain();
@@ -152,7 +151,7 @@ export class WebRTCAdvancedFilters {
 
     // 7. Final limiter to prevent clipping
     this.limiter = this.audioContext.createDynamicsCompressor();
-    this.limiter.threshold.value = config.limiterThreshold;
+    this.limiter.threshold.value = -3; // Prevent clipping
     this.limiter.knee.value = 0; // Hard knee
     this.limiter.ratio.value = 20; // Hard limiting
     this.limiter.attack.value = 0.0001; // Very fast attack
@@ -222,7 +221,7 @@ export class WebRTCAdvancedFilters {
       const rms = Math.sqrt(sum / bufferLength) / 255;
 
       // Apply noise gate with enhanced conversation focus
-      const targetGain = rms > this.noiseGateThreshold ? 1 : 0.02; // More aggressive gate
+      const targetGain = rms > this.filterParams.noiseGateThreshold ? 1 : 0.02; // More aggressive gate
       const currentGain = this.noiseGate!.gain.value;
       const smoothGain = currentGain + (targetGain - currentGain) * 0.15; // Faster response
       
@@ -236,12 +235,12 @@ export class WebRTCAdvancedFilters {
     console.log('🚪 WebRTC advanced noise gate processor started');
   }
 
-  async getOptimizedStream(level: NoiseFilterLevel = 'high'): Promise<MediaStream> {
+  async getOptimizedStream(): Promise<MediaStream> {
     try {
-      console.log(`🎤 Requesting WebRTC optimized stream (level: ${level})`);
+      console.log('🎤 Requesting WebRTC optimized stream for human conversation');
 
-      // Get WebRTC constraints for specified level
-      const constraints = this.getWebRTCConstraints(level);
+      // Get WebRTC constraints optimized for human conversation
+      const constraints = this.getWebRTCConstraints();
       
       // Request microphone with WebRTC optimizations
       this.originalStream = await navigator.mediaDevices.getUserMedia({
@@ -273,7 +272,7 @@ export class WebRTCAdvancedFilters {
       this.destinationNode = this.audioContext.createMediaStreamDestination();
 
       // Create and connect advanced filter chain
-      this.createAdvancedFilterChain(level);
+      this.createAdvancedFilterChain();
       this.connectFilterChain();
 
       // Start noise gate processing
@@ -282,8 +281,8 @@ export class WebRTCAdvancedFilters {
       this.isInitialized = true;
       console.log('🎛️ WebRTC advanced filters fully initialized and active');
 
-      // Apply level-specific tuning
-      this.tuneFiltersForLevel(level);
+      // Apply optimized tuning for human conversation
+      console.log('🎚️ WebRTC filters optimized for HUMAN CONVERSATION');
 
       return this.destinationNode.stream;
 
@@ -301,119 +300,48 @@ export class WebRTCAdvancedFilters {
     }
   }
 
-  private getFilterConfig(level: NoiseFilterLevel): {
-    highPassFreq: number;
-    highPassQ: number;
-    notchQ: number;
-    speechFreq: number;
-    speechQ: number;
-    speechGain: number;
-    lowPassFreq: number;
-    lowPassQ: number;
-    compressorThreshold: number;
-    compressorKnee: number;
-    compressorRatio: number;
-    compressorAttack: number;
-    compressorRelease: number;
-    limiterThreshold: number;
-    noiseGateThreshold: number;
-  } {
-    switch (level) {
-      case 'low':
-        return {
-          highPassFreq: 80,
-          highPassQ: 0.7,
-          notchQ: 10,
-          speechFreq: 1500,
-          speechQ: 1.0,
-          speechGain: 1,
-          lowPassFreq: 8000,
-          lowPassQ: 0.7,
-          compressorThreshold: -24,
-          compressorKnee: 12,
-          compressorRatio: 2,
-          compressorAttack: 0.003,
-          compressorRelease: 0.25,
-          limiterThreshold: -6,
-          noiseGateThreshold: 0.005
-        };
-      case 'medium':
-        return {
-          highPassFreq: 120,
-          highPassQ: 1.0,
-          notchQ: 25,
-          speechFreq: 2000,
-          speechQ: 1.2,
-          speechGain: 2,
-          lowPassFreq: 7500,
-          lowPassQ: 1.0,
-          compressorThreshold: -20,
-          compressorKnee: 8,
-          compressorRatio: 3,
-          compressorAttack: 0.002,
-          compressorRelease: 0.15,
-          limiterThreshold: -4,
-          noiseGateThreshold: 0.01
-        };
-      case 'high':
-        return {
-          highPassFreq: 200,
-          highPassQ: 2.0,
-          notchQ: 50,
-          speechFreq: 2800,
-          speechQ: 1.8,
-          speechGain: 4,
-          lowPassFreq: 6500,
-          lowPassQ: 1.5,
-          compressorThreshold: -18,
-          compressorKnee: 6,
-          compressorRatio: 4,
-          compressorAttack: 0.002,
-          compressorRelease: 0.08,
-          limiterThreshold: -3,
-          noiseGateThreshold: 0.018
-        };
-      case 'aggressive':
-        return {
-          highPassFreq: 280,
-          highPassQ: 3.0,
-          notchQ: 100,
-          speechFreq: 3200,
-          speechQ: 2.5,
-          speechGain: 6,
-          lowPassFreq: 6000,
-          lowPassQ: 2.0,
-          compressorThreshold: -15,
-          compressorKnee: 4,
-          compressorRatio: 8,
-          compressorAttack: 0.001,
-          compressorRelease: 0.05,
-          limiterThreshold: -2,
-          noiseGateThreshold: 0.025
-        };
-      default:
-        return this.getFilterConfig('high');
+  // Update filter parameters in real-time
+  updateFilterParams(params: Partial<AudioFilterParams>): void {
+    Object.assign(this.filterParams, params);
+    
+    if (this.isInitialized) {
+      // Update filters in real-time
+      if (this.highPassFilter && params.highPassFreq) {
+        this.highPassFilter.frequency.value = params.highPassFreq;
+      }
+      if (this.highPassFilter && params.highPassQ) {
+        this.highPassFilter.Q.value = params.highPassQ;
+      }
+      if (this.speechEnhancer && params.speechFreq) {
+        this.speechEnhancer.frequency.value = params.speechFreq;
+      }
+      if (this.speechEnhancer && params.speechQ) {
+        this.speechEnhancer.Q.value = params.speechQ;
+      }
+      if (this.speechEnhancer && params.speechGain) {
+        this.speechEnhancer.gain.value = params.speechGain;
+      }
+      if (this.lowPassFilter && params.lowPassFreq) {
+        this.lowPassFilter.frequency.value = params.lowPassFreq;
+      }
+      if (this.lowPassFilter && params.lowPassQ) {
+        this.lowPassFilter.Q.value = params.lowPassQ;
+      }
+      if (this.compressor && params.compressorThreshold) {
+        this.compressor.threshold.value = params.compressorThreshold;
+      }
+      if (this.compressor && params.compressorRatio) {
+        this.compressor.ratio.value = params.compressorRatio;
+      }
+      if (this.compressor && params.compressorAttack) {
+        this.compressor.attack.value = params.compressorAttack;
+      }
+      if (this.compressor && params.compressorRelease) {
+        this.compressor.release.value = params.compressorRelease;
+      }
+      
+      console.log('🔧 Filter parameters updated in real-time');
     }
-  }
-
-  private tuneFiltersForLevel(level: NoiseFilterLevel): void {
-    const config = this.getFilterConfig(level);
-    
-    // Apply dynamic tuning based on level
-    if (this.compressor) this.compressor.ratio.value = config.compressorRatio + 3;
-    if (this.highPassFilter) this.highPassFilter.frequency.value = config.highPassFreq + 20;
-    if (this.speechEnhancer) this.speechEnhancer.gain.value = config.speechGain + 1;
-    if (this.lowPassFilter) this.lowPassFilter.frequency.value = config.lowPassFreq - 500;
-    this.noiseGateThreshold = config.noiseGateThreshold;
-    
-    const levelDescriptions = {
-      low: 'MINIMAL FILTERING - clean environment',
-      medium: 'MODERATE FILTERING - normal environment', 
-      high: 'CONVERSATION FOCUS - noisy environment',
-      aggressive: 'MAXIMUM FILTERING - very noisy environment'
-    };
-    
-    console.log(`🎚️ WebRTC filters tuned for ${levelDescriptions[level]}`);
   }
 
 
@@ -461,7 +389,7 @@ export class WebRTCAdvancedFilters {
       
       resolve({
         level: gateGain,
-        noiseFloor: this.noiseGateThreshold,
+        noiseFloor: this.filterParams.noiseGateThreshold,
         compressionGain: Math.abs(compressionGain),
         isGateOpen: gateGain > 0.5
       });

@@ -6,6 +6,7 @@ import VoiceAvatar from "./VoiceAvatar";
 import InfoModal from "./InfoModal";
 import AudioFilters from "@/utils/audioFilters";
 import { webrtcFilters } from "@/utils/webrtcFilters";
+import AudioFilterControls from "./AudioFilterControls";
 
 // Language content configuration
 const LANGUAGE_CONTENT = {
@@ -98,6 +99,7 @@ const VoiceAgent = () => {
   const [audioLevel, setAudioLevel] = useState(0);
   const [stopTimeout, setStopTimeout] = useState<NodeJS.Timeout | null>(null);
   const [callLogId, setCallLogId] = useState<number | null>(null);
+  const [showAudioControls, setShowAudioControls] = useState(false);
   const [callLimitsInfo, setCallLimitsInfo] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [callStartTime, setCallStartTime] = useState<Date | null>(null);
@@ -355,7 +357,7 @@ const VoiceAgent = () => {
                 "🎤 Initializing microphone with WebRTC noise filtering...",
               );
               const webrtcStream =
-                await webrtcFilters.getOptimizedStream('high');
+                await webrtcFilters.getOptimizedStream();
               console.log("🎤 Microphone access granted with WebRTC filtering");
 
               // Log WebRTC audio metrics
@@ -1567,6 +1569,12 @@ const VoiceAgent = () => {
           <div className="text-xs mt-1">{callLimitsInfo.errorMessage}</div>
         </div>
       )}
+
+      {/* Audio Filter Controls */}
+      <AudioFilterControls
+        isVisible={showAudioControls}
+        onToggleVisibility={() => setShowAudioControls(!showAudioControls)}
+      />
     </div>
   );
 };
