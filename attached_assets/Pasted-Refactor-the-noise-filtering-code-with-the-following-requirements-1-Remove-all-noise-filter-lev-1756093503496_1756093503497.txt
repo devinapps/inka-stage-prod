@@ -1,0 +1,51 @@
+Refactor the noise filtering code with the following requirements:
+
+1. Remove all noise filter levels (low, medium, aggressive), keep only "high".
+   - Update the export type `NoiseFilterLevel` to only allow "high".
+   - Ensure the default pipeline runs with "high" profile.
+
+2. Delete `audioFilters.ts` entirely and remove all references to it.
+
+3. Implement the processing chain in the following order (Chain B):
+   Highpass Filter → Notch (hum) Filter → Noise Gate → Speech Enhancer → Lowpass Filter → Compressor → Limiter
+
+4. Parameters for "high" profile:
+   - **Highpass filter**: frequency = 220 Hz, Q = 0.9 (adaptive between 200–250 Hz acceptable).
+   - **Notch filter**: center frequency = 50 Hz (or 60 Hz depending on locale), Q = 40.
+   - **Noise Gate**:
+       - openThreshold = 0.015
+       - closeThreshold = 0.009
+       - holdTime = 250 ms
+       - lookAhead = 8 ms (DelayNode)
+       - RMS calculation should be weighted between 300–4000 Hz band.
+   - **Speech enhancer (peaking filter)**:
+       - center frequency = 2800 Hz
+       - gain = +4 dB
+       - Q = 1.4
+   - **Lowpass filter**: frequency = 6000 Hz, Q = 0.8
+   - **Compressor**:
+       - threshold = -20 dB
+       - ratio = 5:1
+       - attack = 2 ms
+       - release = 120 ms
+       - knee = 15 dB
+   - **Limiter**:
+       - threshold = -3 dB
+       - release = 100 ms
+
+5. WebRTC getUserMedia constraints:
+   - Use `ideal` instead of `exact` where possible.
+   - Example: `{ channelCount: { ideal: 1 }, sampleRate: { ideal: 48000 } }`.
+   - Keep echoCancellation/noiseSuppression as fallback if browser does not support `voiceIsolation`.
+
+6. Remove `autoGainControl` when running the "high" profile, since compressor + limiter already handle dynamics.
+
+7. Add lightweight output normalizer:
+   - Adjust gain ±1–2 dB to stabilize loudness after compressor.
+
+8. Add auto-calibration logic on startup:
+   - Record first 800 ms of background before speech.
+   - Estimate noise floor (RMS) and spectrum.
+   - Adjust noise gate threshold and HPF cutoff accordingly:
+     - High noise floor → raise gate threshold + increase HPF cutoff toward 250 Hz.
+     - Low noise floor → lower gate threshold + reduce HPF cutoff toward 180 Hz.

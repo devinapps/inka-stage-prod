@@ -4,7 +4,6 @@ import { toast } from "@/hooks/use-toast";
 import { ELEVENLABS_CONFIG } from "@/config/elevenlabs";
 import VoiceAvatar from "./VoiceAvatar";
 import InfoModal from "./InfoModal";
-import AudioFilters from "@/utils/audioFilters";
 import { webrtcFilters, type NoiseFilterLevel } from "@/utils/webrtcFilters";
 
 // Language content configuration
@@ -104,10 +103,8 @@ const VoiceAgent = () => {
   const [limitCheckInterval, setLimitCheckInterval] =
     useState<NodeJS.Timeout | null>(null);
   const [noiseFilterEnabled, setNoiseFilterEnabled] = useState(true); // Always enabled
-  const [noiseSensitivity, setNoiseSensitivity] = useState<
-    "low" | "medium" | "high" | "aggressive"
-  >("high"); // Default to "high" for noisy environments like supermarkets
-  const audioFiltersRef = useRef<AudioFilters | null>(null);
+  const [noiseSensitivity, setNoiseSensitivity] = useState<NoiseFilterLevel>("high"); // Only "high" profile supported
+
   const [useWebRTC, setUseWebRTC] = useState(true); // Always enable WebRTC by default
   const [isMuted, setIsMuted] = useState(false);
 
@@ -162,18 +159,9 @@ const VoiceAgent = () => {
       console.log("No token found in URL");
     }
 
-    // Initialize audio filters
-    audioFiltersRef.current = new AudioFilters();
-
     return () => {
-      // Cleanup audio filters on unmount
-      if (audioFiltersRef.current) {
-        audioFiltersRef.current.dispose();
-      }
       // Cleanup WebRTC filters on unmount
-      webrtcFilters.cleanup();
-      // Cleanup WebRTC filters
-      webrtcFilters.cleanup();
+      webrtcFilters.destroy();
 
       // Cleanup usage tracking
       if (trackingIntervalRef.current) {
@@ -355,27 +343,12 @@ const VoiceAgent = () => {
                 "🎤 Initializing microphone with WebRTC noise filtering...",
               );
               const webrtcStream =
-                await webrtcFilters.getOptimizedStream(noiseSensitivity);
+                await webrtcFilters.initializeWebRTCStream(noiseSensitivity);
               console.log("🎤 Microphone access granted with WebRTC filtering");
 
               // Log WebRTC audio metrics
-              const metrics = await webrtcFilters.getAudioMetrics();
+              const metrics = webrtcFilters.getAudioMetrics();
               console.log("🎛️ WebRTC audio metrics:", metrics);
-            } else if (audioFiltersRef.current) {
-              // Fallback to legacy audio filters
-              console.log(
-                "🎤 Initializing microphone with legacy noise filtering...",
-              );
-              const filteredStream =
-                await audioFiltersRef.current.getFilteredMicrophoneStream();
-              console.log("🎤 Microphone access granted with legacy filtering");
-
-              // Set noise sensitivity based on environment (cast for legacy compatibility)
-              audioFiltersRef.current.adjustNoiseSensitivity(
-                noiseSensitivity === "aggressive"
-                  ? "high"
-                  : (noiseSensitivity as "low" | "medium" | "high"),
-              );
             }
           } else {
             // Basic microphone access with native noise suppression

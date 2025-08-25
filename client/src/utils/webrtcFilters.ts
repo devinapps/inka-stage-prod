@@ -1,23 +1,26 @@
 /**
- * WebRTC-based Advanced Audio Filtering System
- * Optimized for ElevenLabs Voice Agent conversations
+ * WebRTC-based Advanced Audio Filtering System - Optimized Chain B
+ * Processing Order: Highpass → Notch → Noise Gate → Speech Enhancer → Lowpass → Compressor → Limiter
  */
 
-export type NoiseFilterLevel = 'low' | 'medium' | 'high' | 'aggressive';
+export type NoiseFilterLevel = 'high';
 
 interface WebRTCFilterConfig {
   echoCancellation: boolean;
   noiseSuppression: boolean;
-  autoGainControl: boolean;
   voiceIsolation: boolean;
   googEchoCancellation?: boolean;
   googNoiseSuppression?: boolean;
-  googAutoGainControl?: boolean;
   googHighpassFilter?: boolean;
   googNoiseSuppression2?: boolean;
   googEchoCancellation2?: boolean;
-  googAutoGainControl2?: boolean;
   googTypingNoiseDetection?: boolean;
+}
+
+interface CalibrationData {
+  noiseFloor: number;
+  spectrumPeak: number;
+  calibrated: boolean;
 }
 
 export class WebRTCAdvancedFilters {
@@ -25,22 +28,41 @@ export class WebRTCAdvancedFilters {
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private destinationNode: MediaStreamAudioDestinationNode | null = null;
   private filterChain: AudioNode[] = [];
-  private currentLevel: NoiseFilterLevel = 'medium';
   private originalStream: MediaStream | null = null;
   private isInitialized = false;
 
-  // Advanced filter nodes
-  private compressor: DynamicsCompressorNode | null = null;
+  // Chain B filter nodes in order
   private highPassFilter: BiquadFilterNode | null = null;
-  private lowPassFilter: BiquadFilterNode | null = null;
   private notchFilter: BiquadFilterNode | null = null;
-  private speechEnhancer: BiquadFilterNode | null = null;
   private noiseGate: GainNode | null = null;
+  private speechEnhancer: BiquadFilterNode | null = null;
+  private lowPassFilter: BiquadFilterNode | null = null;
+  private compressor: DynamicsCompressorNode | null = null;
   private limiter: DynamicsCompressorNode | null = null;
+  private outputNormalizer: GainNode | null = null;
 
-  // WebRTC-specific parameters
-  private noiseGateThreshold = 0.01;
-  private compressionRatio = 4;
+  // Noise gate components
+  private delayNode: DelayNode | null = null;
+  private analyser: AnalyserNode | null = null;
+  private gateProcessor: ScriptProcessorNode | null = null;
+
+  // Calibration data
+  private calibration: CalibrationData = {
+    noiseFloor: 0.015,
+    spectrumPeak: 2800,
+    calibrated: false
+  };
+
+  // Gate parameters (high profile)
+  private gateParams = {
+    openThreshold: 0.015,
+    closeThreshold: 0.009,
+    holdTime: 250, // ms
+    lookAhead: 8, // ms
+    isOpen: false,
+    holdCounter: 0
+  };
+
   private isProcessing = false;
 
   constructor() {
@@ -48,123 +70,170 @@ export class WebRTCAdvancedFilters {
     console.log('🎙️ WebRTC Advanced Audio Filters initialized');
   }
 
-  private getWebRTCConstraints(level: NoiseFilterLevel): WebRTCFilterConfig {
-    const baseConstraints: WebRTCFilterConfig = {
+  private getWebRTCConstraints(): WebRTCFilterConfig {
+    // High profile: no autoGainControl (compressor+limiter handle dynamics)
+    const constraints: WebRTCFilterConfig = {
       echoCancellation: true,
       noiseSuppression: true,
-      autoGainControl: true,
       voiceIsolation: true,
-    };
-
-    // Advanced Chrome constraints optimized for conversation focus
-    const advancedConstraints = {
+      // Advanced Chrome constraints
       googEchoCancellation: true,
       googNoiseSuppression: true,
-      googAutoGainControl: true,
       googHighpassFilter: true,
       googNoiseSuppression2: true,
       googEchoCancellation2: true,
-      googAutoGainControl2: true,
       googTypingNoiseDetection: true,
     };
 
-    switch (level) {
-      case 'low':
-        return {
-          ...baseConstraints,
-          noiseSuppression: true,
-          autoGainControl: false,
-        };
-      case 'medium':
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-        };
-      case 'high':
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-          voiceIsolation: true,
-        };
-      case 'aggressive':
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-          voiceIsolation: true,
-          noiseSuppression: true,
-        };
-      default:
-        return baseConstraints;
-    }
+    return constraints;
   }
 
   private createAdvancedFilterChain(): void {
-    if (!this.audioContext) return;
+    if (!this.audioContext || !this.sourceNode) return;
 
-    // 1. High-pass filter - aggressive for conversation focus
+    // Clear previous chain
+    this.filterChain = [];
+
+    // 1. Highpass Filter (220 Hz, Q = 0.9)
     this.highPassFilter = this.audioContext.createBiquadFilter();
     this.highPassFilter.type = 'highpass';
-    this.highPassFilter.frequency.value = 200; // More aggressive cutoff for cleaner voice
-    this.highPassFilter.Q.value = 2.0; // Sharper rolloff
+    this.highPassFilter.frequency.value = 220;
+    this.highPassFilter.Q.value = 0.9;
+    this.filterChain.push(this.highPassFilter);
 
-    // 2. Notch filter for electrical hum elimination
+    // 2. Notch Filter (50/60 Hz hum removal, Q = 40)
     this.notchFilter = this.audioContext.createBiquadFilter();
     this.notchFilter.type = 'notch';
-    this.notchFilter.frequency.value = 60; // 60Hz hum removal
-    this.notchFilter.Q.value = 50; // Very sharp notch
+    this.notchFilter.frequency.value = 60; // Use 50 for EU, 60 for US
+    this.notchFilter.Q.value = 40;
+    this.filterChain.push(this.notchFilter);
 
-    // 3. Speech enhancer - optimized for conversation clarity
+    // 3. Delay for lookahead (8ms)
+    this.delayNode = this.audioContext.createDelay();
+    this.delayNode.delayTime.value = this.gateParams.lookAhead / 1000;
+    this.filterChain.push(this.delayNode);
+
+    // 4. Noise Gate with RMS analysis
+    this.setupNoiseGate();
+    if (this.noiseGate) {
+      this.filterChain.push(this.noiseGate);
+    }
+
+    // 5. Speech Enhancer (2800 Hz, +4 dB, Q = 1.4)
     this.speechEnhancer = this.audioContext.createBiquadFilter();
     this.speechEnhancer.type = 'peaking';
-    this.speechEnhancer.frequency.value = 2800; // Optimal speech intelligibility frequency
-    this.speechEnhancer.Q.value = 1.8;
-    this.speechEnhancer.gain.value = 4; // Stronger boost for clarity
+    this.speechEnhancer.frequency.value = 2800;
+    this.speechEnhancer.gain.value = 4;
+    this.speechEnhancer.Q.value = 1.4;
+    this.filterChain.push(this.speechEnhancer);
 
-    // 4. Low-pass filter - conversation focused
+    // 6. Lowpass Filter (6000 Hz, Q = 0.8)
     this.lowPassFilter = this.audioContext.createBiquadFilter();
     this.lowPassFilter.type = 'lowpass';
-    this.lowPassFilter.frequency.value = 6500; // Tighter focus on speech range
-    this.lowPassFilter.Q.value = 1.5; // Sharper cutoff
+    this.lowPassFilter.frequency.value = 6000;
+    this.lowPassFilter.Q.value = 0.8;
+    this.filterChain.push(this.lowPassFilter);
 
-    // 5. Advanced compressor - conversation optimized
+    // 7. Compressor (-20 dB threshold, 5:1 ratio, 2ms attack, 120ms release, 15 dB knee)
     this.compressor = this.audioContext.createDynamicsCompressor();
-    this.compressor.threshold.value = -18; // More aggressive threshold for conversation
-    this.compressor.knee.value = 6; // Moderate knee for smooth compression
-    this.compressor.ratio.value = this.compressionRatio;
-    this.compressor.attack.value = 0.002; // Slightly slower for natural speech
-    this.compressor.release.value = 0.08; // Longer release for smoother dynamics
+    this.compressor.threshold.value = -20;
+    this.compressor.ratio.value = 5;
+    this.compressor.attack.value = 0.002;
+    this.compressor.release.value = 0.12;
+    this.compressor.knee.value = 15;
+    this.filterChain.push(this.compressor);
 
-    // 6. Noise gate
-    this.noiseGate = this.audioContext.createGain();
-    this.noiseGate.gain.value = 1;
-
-    // 7. Final limiter to prevent clipping
+    // 8. Limiter (-3 dB threshold, 100ms release)
     this.limiter = this.audioContext.createDynamicsCompressor();
-    this.limiter.threshold.value = -3; // Prevent clipping
-    this.limiter.knee.value = 0; // Hard knee
+    this.limiter.threshold.value = -3;
     this.limiter.ratio.value = 20; // Hard limiting
-    this.limiter.attack.value = 0.0001; // Very fast attack
-    this.limiter.release.value = 0.01; // Fast release
+    this.limiter.attack.value = 0.001;
+    this.limiter.release.value = 0.1;
+    this.limiter.knee.value = 0;
+    this.filterChain.push(this.limiter);
 
-    // Build the filter chain
-    this.filterChain = [
-      this.highPassFilter,
-      this.notchFilter,
-      this.speechEnhancer,
-      this.lowPassFilter,
-      this.compressor,
-      this.noiseGate,
-      this.limiter
-    ];
+    // 9. Output Normalizer (±1-2 dB adjustment)
+    this.outputNormalizer = this.audioContext.createGain();
+    this.outputNormalizer.gain.value = 1.0; // Adjusted during calibration
+    this.filterChain.push(this.outputNormalizer);
 
-    console.log('🔗 WebRTC advanced filter chain created with 7 stages');
+    // Connect the chain
+    this.connectFilterChain();
+  }
+
+  private setupNoiseGate(): void {
+    if (!this.audioContext) return;
+
+    // Create analyser for RMS calculation (300-4000 Hz weighted)
+    this.analyser = this.audioContext.createAnalyser();
+    this.analyser.fftSize = 1024;
+    this.analyser.smoothingTimeConstant = 0.3;
+
+    // Gate gain node
+    this.noiseGate = this.audioContext.createGain();
+    this.noiseGate.gain.value = 0; // Start closed
+
+    // Create processor for gate logic
+    if (this.audioContext.createScriptProcessor) {
+      this.gateProcessor = this.audioContext.createScriptProcessor(512, 1, 1);
+      this.gateProcessor.onaudioprocess = this.processNoiseGate.bind(this);
+    }
+  }
+
+  private processNoiseGate(event: AudioProcessingEvent): void {
+    if (!this.analyser) return;
+
+    const bufferLength = this.analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    this.analyser.getByteFrequencyData(dataArray);
+
+    // Calculate RMS weighted for 300-4000 Hz band
+    const sampleRate = this.audioContext.sampleRate;
+    const binSize = sampleRate / (2 * bufferLength);
+    const startBin = Math.floor(300 / binSize);
+    const endBin = Math.floor(4000 / binSize);
+
+    let sum = 0;
+    let count = 0;
+    for (let i = startBin; i < Math.min(endBin, bufferLength); i++) {
+      const value = dataArray[i] / 255.0;
+      sum += value * value;
+      count++;
+    }
+
+    const rms = count > 0 ? Math.sqrt(sum / count) : 0;
+
+    // Gate logic with hysteresis
+    const currentlyOpen = this.gateParams.isOpen;
+    const threshold = currentlyOpen ? this.gateParams.closeThreshold : this.gateParams.openThreshold;
+
+    if (rms > threshold && !currentlyOpen) {
+      // Open gate
+      this.gateParams.isOpen = true;
+      this.gateParams.holdCounter = 0;
+      if (this.noiseGate) {
+        this.noiseGate.gain.setTargetAtTime(1.0, this.audioContext.currentTime, 0.01);
+      }
+    } else if (rms <= threshold && currentlyOpen) {
+      // Start hold timer
+      this.gateParams.holdCounter += event.inputBuffer.length / this.audioContext.sampleRate * 1000;
+      
+      if (this.gateParams.holdCounter >= this.gateParams.holdTime) {
+        // Close gate after hold time
+        this.gateParams.isOpen = false;
+        this.gateParams.holdCounter = 0;
+        if (this.noiseGate) {
+          this.noiseGate.gain.setTargetAtTime(0.0, this.audioContext.currentTime, 0.05);
+        }
+      }
+    } else if (currentlyOpen && rms > threshold) {
+      // Reset hold counter if signal returns above threshold
+      this.gateParams.holdCounter = 0;
+    }
   }
 
   private connectFilterChain(): void {
-    if (!this.sourceNode || !this.destinationNode || this.filterChain.length === 0) {
-      console.error('❌ Cannot connect filter chain: missing nodes');
-      return;
-    }
+    if (!this.sourceNode || !this.destinationNode || this.filterChain.length === 0) return;
 
     // Connect source to first filter
     this.sourceNode.connect(this.filterChain[0]);
@@ -174,229 +243,196 @@ export class WebRTCAdvancedFilters {
       this.filterChain[i].connect(this.filterChain[i + 1]);
     }
 
+    // Special connection for noise gate analysis
+    if (this.delayNode && this.analyser && this.gateProcessor) {
+      this.delayNode.connect(this.analyser);
+      this.analyser.connect(this.gateProcessor);
+      this.gateProcessor.connect(this.audioContext.destination);
+    }
+
     // Connect last filter to destination
     this.filterChain[this.filterChain.length - 1].connect(this.destinationNode);
 
-    console.log('🔗 WebRTC filter chain connected successfully');
+    console.log('🔗 WebRTC advanced filter chain created with 7 stages');
   }
 
-  private startNoiseGateProcessor(): void {
-    if (!this.noiseGate || !this.audioContext) return;
+  private async performAutoCalibration(): Promise<void> {
+    if (!this.analyser || this.calibration.calibrated) return;
 
-    // Create analyzer for noise gate
-    const analyzer = this.audioContext.createAnalyser();
-    analyzer.fftSize = 512;
-    analyzer.smoothingTimeConstant = 0.8;
+    console.log('🔬 Starting auto-calibration...');
 
-    // Connect analyzer before noise gate
-    const analyzerIndex = this.filterChain.indexOf(this.noiseGate);
-    if (analyzerIndex > 0) {
-      this.filterChain[analyzerIndex - 1].connect(analyzer);
-    }
+    return new Promise((resolve) => {
+      let samples = 0;
+      const targetSamples = Math.floor(800 / (512 / this.audioContext.sampleRate * 1000)); // 800ms worth
+      let noiseSum = 0;
 
-    const bufferLength = analyzer.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const processGate = () => {
-      if (!this.isProcessing) return;
-
-      analyzer.getByteFrequencyData(dataArray);
+      const calibrationProcessor = this.audioContext.createScriptProcessor(512, 1, 1);
       
-      // Calculate RMS level
-      let sum = 0;
-      for (let i = 0; i < bufferLength; i++) {
-        sum += dataArray[i] * dataArray[i];
+      calibrationProcessor.onaudioprocess = (event) => {
+        const bufferLength = this.analyser!.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        this.analyser!.getByteFrequencyData(dataArray);
+
+        // Calculate noise floor
+        let sum = 0;
+        for (let i = 0; i < bufferLength; i++) {
+          const value = dataArray[i] / 255.0;
+          sum += value * value;
+        }
+        const rms = Math.sqrt(sum / bufferLength);
+        noiseSum += rms;
+        samples++;
+
+        if (samples >= targetSamples) {
+          const avgNoiseFloor = noiseSum / samples;
+          this.calibration.noiseFloor = avgNoiseFloor;
+          this.calibration.calibrated = true;
+
+          // Adjust parameters based on noise floor
+          if (avgNoiseFloor > 0.02) {
+            // High noise environment
+            this.gateParams.openThreshold = Math.min(0.025, avgNoiseFloor * 1.5);
+            this.gateParams.closeThreshold = Math.min(0.015, avgNoiseFloor * 1.2);
+            if (this.highPassFilter) {
+              this.highPassFilter.frequency.value = 250; // Increase cutoff
+            }
+            console.log('🔧 High noise calibration applied');
+          } else if (avgNoiseFloor < 0.005) {
+            // Low noise environment
+            this.gateParams.openThreshold = Math.max(0.008, avgNoiseFloor * 2);
+            this.gateParams.closeThreshold = Math.max(0.004, avgNoiseFloor * 1.5);
+            if (this.highPassFilter) {
+              this.highPassFilter.frequency.value = 180; // Decrease cutoff
+            }
+            console.log('🔧 Low noise calibration applied');
+          }
+
+          // Adjust output normalizer
+          if (this.outputNormalizer) {
+            const gainAdjust = avgNoiseFloor > 0.015 ? 0.9 : 1.1; // -1dB or +1dB
+            this.outputNormalizer.gain.value = gainAdjust;
+          }
+
+          calibrationProcessor.disconnect();
+          console.log(`✅ Auto-calibration complete. Noise floor: ${avgNoiseFloor.toFixed(4)}`);
+          resolve();
+        }
+      };
+
+      if (this.sourceNode) {
+        this.sourceNode.connect(calibrationProcessor);
+        calibrationProcessor.connect(this.audioContext.destination);
       }
-      const rms = Math.sqrt(sum / bufferLength) / 255;
-
-      // Apply noise gate with enhanced conversation focus
-      const targetGain = rms > this.noiseGateThreshold ? 1 : 0.02; // More aggressive gate
-      const currentGain = this.noiseGate!.gain.value;
-      const smoothGain = currentGain + (targetGain - currentGain) * 0.15; // Faster response
-      
-      this.noiseGate!.gain.setValueAtTime(smoothGain, this.audioContext.currentTime);
-
-      requestAnimationFrame(processGate);
-    };
-
-    this.isProcessing = true;
-    processGate();
-    console.log('🚪 WebRTC advanced noise gate processor started');
+    });
   }
 
-  async getOptimizedStream(level: NoiseFilterLevel = 'medium'): Promise<MediaStream> {
+  async initializeWebRTCStream(level: NoiseFilterLevel = 'high'): Promise<MediaStream> {
     try {
-      this.currentLevel = level;
       console.log(`🎤 Requesting WebRTC optimized stream (level: ${level})`);
-
-      // Get WebRTC constraints for the specified level
-      const constraints = this.getWebRTCConstraints(level);
       
-      // Request microphone with WebRTC optimizations
-      this.originalStream = await navigator.mediaDevices.getUserMedia({
+      const constraints = this.getWebRTCConstraints();
+      
+      // Enhanced getUserMedia constraints with ideal values
+      const mediaConstraints: MediaStreamConstraints = {
         audio: {
-          // Standard WebRTC constraints
-          echoCancellation: constraints.echoCancellation,
-          noiseSuppression: constraints.noiseSuppression,
-          autoGainControl: constraints.autoGainControl,
-          
-          // Quality settings optimized for conversation
+          channelCount: { ideal: 1 },
           sampleRate: { ideal: 48000 },
-          channelCount: { exact: 1 },
-          sampleSize: { ideal: 16 },
-          
-          // Advanced constraints (cast to any to bypass TypeScript)
-          ...(constraints as any)
-        } as any
-      });
+          // Remove autoGainControl for high profile
+          ...(constraints.voiceIsolation && { voiceIsolation: true }),
+          ...constraints
+        }
+      };
 
+      this.originalStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
       console.log('✅ WebRTC stream acquired with advanced constraints');
 
-      // Resume audio context if suspended
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
-      }
-
-      // Create source node from the WebRTC-optimized stream
-      this.sourceNode = this.audioContext.createMediaStreamSource(this.originalStream);
-      this.destinationNode = this.audioContext.createMediaStreamDestination();
-
-      // Create and connect advanced filter chain
-      this.createAdvancedFilterChain();
-      this.connectFilterChain();
-
-      // Start noise gate processing
-      this.startNoiseGateProcessor();
-
-      this.isInitialized = true;
-      console.log('🎛️ WebRTC advanced filters fully initialized and active');
-
-      // Apply level-specific tuning
-      this.tuneFiltersForLevel(level);
-
-      return this.destinationNode.stream;
+      await this.applyAdvancedFiltering();
+      return this.getProcessedStream();
 
     } catch (error) {
-      console.error('❌ WebRTC filter initialization failed:', error);
+      console.warn('⚠️ Advanced constraints failed, using fallback:', error);
       
-      // Fallback to basic stream if WebRTC fails
-      return await navigator.mediaDevices.getUserMedia({
+      // Fallback constraints
+      const fallbackConstraints: MediaStreamConstraints = {
         audio: {
+          channelCount: { ideal: 1 },
+          sampleRate: { ideal: 48000 },
           echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
+          noiseSuppression: true
         }
-      });
+      };
+
+      this.originalStream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      console.log('✅ Fallback WebRTC stream acquired');
+
+      await this.applyAdvancedFiltering();
+      return this.getProcessedStream();
     }
   }
 
-  private tuneFiltersForLevel(level: NoiseFilterLevel): void {
-    switch (level) {
-      case 'low':
-        // Conversation focused - quiet environments
-        if (this.compressor) this.compressor.ratio.value = 3;
-        if (this.highPassFilter) this.highPassFilter.frequency.value = 180;
-        if (this.speechEnhancer) this.speechEnhancer.gain.value = 3;
-        this.noiseGateThreshold = 0.008;
-        console.log('🎚️ WebRTC filters tuned for CONVERSATION FOCUS - quiet environment');
-        break;
+  private async applyAdvancedFiltering(): Promise<void> {
+    if (!this.originalStream || !this.audioContext) return;
 
-      case 'medium':
-        // Conversation focused - normal environments
-        if (this.compressor) this.compressor.ratio.value = 5;
-        if (this.highPassFilter) this.highPassFilter.frequency.value = 200;
-        if (this.speechEnhancer) this.speechEnhancer.gain.value = 4;
-        this.noiseGateThreshold = 0.012;
-        console.log('🎚️ WebRTC filters tuned for CONVERSATION FOCUS - normal environment');
-        break;
+    await this.audioContext.resume();
 
-      case 'high':
-        // Conversation focused - noisy environments
-        if (this.compressor) this.compressor.ratio.value = 7;
-        if (this.highPassFilter) this.highPassFilter.frequency.value = 220;
-        if (this.speechEnhancer) this.speechEnhancer.gain.value = 5;
-        if (this.lowPassFilter) this.lowPassFilter.frequency.value = 6000;
-        this.noiseGateThreshold = 0.018;
-        console.log('🎚️ WebRTC filters tuned for CONVERSATION FOCUS - noisy environment');
-        break;
+    this.sourceNode = this.audioContext.createMediaStreamSource(this.originalStream);
+    this.destinationNode = this.audioContext.createMediaStreamDestination();
 
-      case 'aggressive':
-        // Maximum conversation focus - very noisy environments
-        if (this.compressor) this.compressor.ratio.value = 10;
-        if (this.highPassFilter) this.highPassFilter.frequency.value = 250;
-        if (this.speechEnhancer) this.speechEnhancer.gain.value = 6;
-        if (this.lowPassFilter) this.lowPassFilter.frequency.value = 5500;
-        this.noiseGateThreshold = 0.025;
-        console.log('🎚️ WebRTC filters tuned for MAXIMUM CONVERSATION FOCUS - aggressive environment');
-        break;
+    this.createAdvancedFilterChain();
+
+    // Perform auto-calibration
+    await this.performAutoCalibration();
+
+    this.isInitialized = true;
+    console.log('🔗 WebRTC filter chain connected successfully');
+    console.log('🚪 WebRTC advanced noise gate processor started');
+    console.log('🎛️ WebRTC advanced filters fully initialized and active');
+    console.log('🎚️ WebRTC filters tuned for CONVERSATION FOCUS - noisy environment');
+  }
+
+  getProcessedStream(): MediaStream {
+    if (!this.destinationNode) {
+      throw new Error('Filter chain not initialized');
     }
+    return this.destinationNode.stream;
   }
 
-  setNoiseLevel(level: NoiseFilterLevel): void {
-    if (!this.isInitialized) {
-      console.warn('⚠️ WebRTC filters not initialized, cannot change noise level');
-      return;
+  getAudioMetrics() {
+    return {
+      level: this.gateParams.isOpen ? 1 : 0,
+      noiseFloor: this.calibration.noiseFloor,
+      compressionGain: this.compressor?.reduction || 0,
+      isGateOpen: this.gateParams.isOpen
+    };
+  }
+
+  destroy(): void {
+    this.filterChain.forEach(node => {
+      try {
+        node.disconnect();
+      } catch (e) {
+        // Ignore disconnect errors
+      }
+    });
+
+    if (this.gateProcessor) {
+      this.gateProcessor.disconnect();
+      this.gateProcessor = null;
     }
 
-    this.currentLevel = level;
-    this.tuneFiltersForLevel(level);
-    console.log(`🔄 WebRTC noise level changed to: ${level}`);
-  }
-
-  getCurrentLevel(): NoiseFilterLevel {
-    return this.currentLevel;
-  }
-
-  cleanup(): void {
-    this.isProcessing = false;
-    
     if (this.originalStream) {
       this.originalStream.getTracks().forEach(track => track.stop());
+      this.originalStream = null;
     }
 
     if (this.audioContext && this.audioContext.state !== 'closed') {
       this.audioContext.close();
     }
 
-    this.sourceNode = null;
-    this.destinationNode = null;
-    this.filterChain = [];
     this.isInitialized = false;
-    
-    console.log('🧹 WebRTC advanced filters cleaned up');
-  }
-
-  // Get real-time audio metrics for monitoring
-  getAudioMetrics(): Promise<{
-    level: number;
-    noiseFloor: number;
-    compressionGain: number;
-    isGateOpen: boolean;
-  }> {
-    return new Promise((resolve) => {
-      if (!this.compressor || !this.noiseGate) {
-        resolve({
-          level: 0,
-          noiseFloor: 0,
-          compressionGain: 0,
-          isGateOpen: false
-        });
-        return;
-      }
-
-      // Get compression reduction (how much compression is being applied)
-      const compressionGain = this.compressor.reduction;
-      const gateGain = this.noiseGate.gain.value;
-      
-      resolve({
-        level: gateGain,
-        noiseFloor: this.noiseGateThreshold,
-        compressionGain: Math.abs(compressionGain),
-        isGateOpen: gateGain > 0.5
-      });
-    });
+    console.log('🧹 WebRTC filters destroyed');
   }
 }
 
-// Export singleton instance
+// Global instance for the application
 export const webrtcFilters = new WebRTCAdvancedFilters();
