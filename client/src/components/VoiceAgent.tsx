@@ -5,7 +5,7 @@ import { ELEVENLABS_CONFIG } from "@/config/elevenlabs";
 import VoiceAvatar from "./VoiceAvatar";
 import InfoModal from "./InfoModal";
 import AudioFilters from "@/utils/audioFilters";
-import { webrtcFilters, type NoiseFilterLevel } from "@/utils/webrtcFilters";
+import { webrtcFilters } from "@/utils/webrtcFilters";
 
 // Language content configuration
 const LANGUAGE_CONTENT = {
@@ -355,7 +355,7 @@ const VoiceAgent = () => {
                 "🎤 Initializing microphone with WebRTC noise filtering...",
               );
               const webrtcStream =
-                await webrtcFilters.getOptimizedStream(noiseSensitivity);
+                await webrtcFilters.getOptimizedStream();
               console.log("🎤 Microphone access granted with WebRTC filtering");
 
               // Log WebRTC audio metrics

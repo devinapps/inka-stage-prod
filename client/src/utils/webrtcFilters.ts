@@ -1,9 +1,7 @@
 /**
  * WebRTC-based Advanced Audio Filtering System
- * Optimized for ElevenLabs Voice Agent conversations
+ * Optimized for ElevenLabs Voice Agent conversations with high-quality noise filtering
  */
-
-export type NoiseFilterLevel = 'low' | 'medium' | 'high' | 'aggressive';
 
 interface WebRTCFilterConfig {
   echoCancellation: boolean;
@@ -25,7 +23,6 @@ export class WebRTCAdvancedFilters {
   private sourceNode: MediaStreamAudioSourceNode | null = null;
   private destinationNode: MediaStreamAudioDestinationNode | null = null;
   private filterChain: AudioNode[] = [];
-  private currentLevel: NoiseFilterLevel = 'medium';
   private originalStream: MediaStream | null = null;
   private isInitialized = false;
 
@@ -48,7 +45,7 @@ export class WebRTCAdvancedFilters {
     console.log('🎙️ WebRTC Advanced Audio Filters initialized');
   }
 
-  private getWebRTCConstraints(level: NoiseFilterLevel): WebRTCFilterConfig {
+  private getWebRTCConstraints(): WebRTCFilterConfig {
     const baseConstraints: WebRTCFilterConfig = {
       echoCancellation: true,
       noiseSuppression: true,
@@ -68,34 +65,12 @@ export class WebRTCAdvancedFilters {
       googTypingNoiseDetection: true,
     };
 
-    switch (level) {
-      case 'low':
-        return {
-          ...baseConstraints,
-          noiseSuppression: true,
-          autoGainControl: false,
-        };
-      case 'medium':
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-        };
-      case 'high':
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-          voiceIsolation: true,
-        };
-      case 'aggressive':
-        return {
-          ...baseConstraints,
-          ...advancedConstraints,
-          voiceIsolation: true,
-          noiseSuppression: true,
-        };
-      default:
-        return baseConstraints;
-    }
+    // Always return high-quality configuration
+    return {
+      ...baseConstraints,
+      ...advancedConstraints,
+      voiceIsolation: true,
+    };
   }
 
   private createAdvancedFilterChain(): void {
@@ -224,13 +199,12 @@ export class WebRTCAdvancedFilters {
     console.log('🚪 WebRTC advanced noise gate processor started');
   }
 
-  async getOptimizedStream(level: NoiseFilterLevel = 'medium'): Promise<MediaStream> {
+  async getOptimizedStream(): Promise<MediaStream> {
     try {
-      this.currentLevel = level;
-      console.log(`🎤 Requesting WebRTC optimized stream (level: ${level})`);
+      console.log('🎤 Requesting WebRTC optimized stream (level: high)');
 
-      // Get WebRTC constraints for the specified level
-      const constraints = this.getWebRTCConstraints(level);
+      // Get WebRTC constraints for high-quality filtering
+      const constraints = this.getWebRTCConstraints();
       
       // Request microphone with WebRTC optimizations
       this.originalStream = await navigator.mediaDevices.getUserMedia({
@@ -271,8 +245,8 @@ export class WebRTCAdvancedFilters {
       this.isInitialized = true;
       console.log('🎛️ WebRTC advanced filters fully initialized and active');
 
-      // Apply level-specific tuning
-      this.tuneFiltersForLevel(level);
+      // Apply high-quality tuning
+      this.tuneFiltersForHighQuality();
 
       return this.destinationNode.stream;
 
@@ -290,62 +264,17 @@ export class WebRTCAdvancedFilters {
     }
   }
 
-  private tuneFiltersForLevel(level: NoiseFilterLevel): void {
-    switch (level) {
-      case 'low':
-        // Conversation focused - quiet environments
-        if (this.compressor) this.compressor.ratio.value = 3;
-        if (this.highPassFilter) this.highPassFilter.frequency.value = 180;
-        if (this.speechEnhancer) this.speechEnhancer.gain.value = 3;
-        this.noiseGateThreshold = 0.008;
-        console.log('🎚️ WebRTC filters tuned for CONVERSATION FOCUS - quiet environment');
-        break;
-
-      case 'medium':
-        // Conversation focused - normal environments
-        if (this.compressor) this.compressor.ratio.value = 5;
-        if (this.highPassFilter) this.highPassFilter.frequency.value = 200;
-        if (this.speechEnhancer) this.speechEnhancer.gain.value = 4;
-        this.noiseGateThreshold = 0.012;
-        console.log('🎚️ WebRTC filters tuned for CONVERSATION FOCUS - normal environment');
-        break;
-
-      case 'high':
-        // Conversation focused - noisy environments
-        if (this.compressor) this.compressor.ratio.value = 7;
-        if (this.highPassFilter) this.highPassFilter.frequency.value = 220;
-        if (this.speechEnhancer) this.speechEnhancer.gain.value = 5;
-        if (this.lowPassFilter) this.lowPassFilter.frequency.value = 6000;
-        this.noiseGateThreshold = 0.018;
-        console.log('🎚️ WebRTC filters tuned for CONVERSATION FOCUS - noisy environment');
-        break;
-
-      case 'aggressive':
-        // Maximum conversation focus - very noisy environments
-        if (this.compressor) this.compressor.ratio.value = 10;
-        if (this.highPassFilter) this.highPassFilter.frequency.value = 250;
-        if (this.speechEnhancer) this.speechEnhancer.gain.value = 6;
-        if (this.lowPassFilter) this.lowPassFilter.frequency.value = 5500;
-        this.noiseGateThreshold = 0.025;
-        console.log('🎚️ WebRTC filters tuned for MAXIMUM CONVERSATION FOCUS - aggressive environment');
-        break;
-    }
+  private tuneFiltersForHighQuality(): void {
+    // High-quality conversation focused tuning for noisy environments
+    if (this.compressor) this.compressor.ratio.value = 7;
+    if (this.highPassFilter) this.highPassFilter.frequency.value = 220;
+    if (this.speechEnhancer) this.speechEnhancer.gain.value = 5;
+    if (this.lowPassFilter) this.lowPassFilter.frequency.value = 6000;
+    this.noiseGateThreshold = 0.018;
+    console.log('🎚️ WebRTC filters tuned for CONVERSATION FOCUS - noisy environment');
   }
 
-  setNoiseLevel(level: NoiseFilterLevel): void {
-    if (!this.isInitialized) {
-      console.warn('⚠️ WebRTC filters not initialized, cannot change noise level');
-      return;
-    }
 
-    this.currentLevel = level;
-    this.tuneFiltersForLevel(level);
-    console.log(`🔄 WebRTC noise level changed to: ${level}`);
-  }
-
-  getCurrentLevel(): NoiseFilterLevel {
-    return this.currentLevel;
-  }
 
   cleanup(): void {
     this.isProcessing = false;
