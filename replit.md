@@ -4,12 +4,12 @@
 This project is a full-stack voice AI agent application called "Inka", offering a voice-activated AI assistant with speech recognition and text-to-speech capabilities. Built with React and Express.js, it features a modern UI using shadcn/ui and Tailwind CSS. The application aims to provide an engaging user experience through advanced voice AI integration, including database-managed call limit system. The business vision is to deliver a seamless, intuitive, and scalable voice AI solution with configurable operational limits.
 
 ## Recent Changes (August 25, 2025)
-- **WebRTC Filter Simplification**: Streamlined `webrtcFilters.ts` to use only high-quality filtering mode
-- **Removed Multiple Filter Levels**: Eliminated low, medium, and aggressive modes - now uses optimal high-quality configuration by default
-- **Simplified API**: Updated `getOptimizedStream()` function to remove level parameter and always return best quality
-- **TypeScript Cleanup**: Removed `NoiseFilterLevel` type and related unused imports throughout the application
-- **Performance Optimization**: WebRTC filters now initialize faster with single high-performance configuration
-- **App Rebuild**: Successfully rebuilt application with simplified audio filtering system
+- **WebRTC Filter Revert**: Restored multi-level filtering system in `webrtcFilters.ts` with configurable noise filtering levels
+- **Restored Multiple Filter Levels**: Re-added low, medium, high, and aggressive filtering modes with level-specific configurations
+- **Parameter Restoration**: Reverted `getOptimizedStream()` function to accept `NoiseFilterLevel` parameter ('low' | 'medium' | 'high' | 'aggressive')
+- **TypeScript Types**: Restored `NoiseFilterLevel` type export and comprehensive level-specific filter configurations
+- **Enhanced Configurability**: Different environments now support optimized filtering: minimal (clean), moderate (normal), conversation focus (noisy), maximum filtering (very noisy)
+- **App Rebuild**: Successfully rebuilt application with restored multi-level audio filtering system
 
 ## Previous Changes (August 21, 2025)
 - **Deployment Security Fix**: Applied suggested fixes for "dev command" security restrictions

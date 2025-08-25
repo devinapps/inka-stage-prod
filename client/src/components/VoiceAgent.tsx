@@ -355,7 +355,7 @@ const VoiceAgent = () => {
                 "🎤 Initializing microphone with WebRTC noise filtering...",
               );
               const webrtcStream =
-                await webrtcFilters.getOptimizedStream();
+                await webrtcFilters.getOptimizedStream('high');
               console.log("🎤 Microphone access granted with WebRTC filtering");
 
               // Log WebRTC audio metrics
