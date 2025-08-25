@@ -10,7 +10,7 @@ import { webrtcFilters, type NoiseFilterLevel } from "@/utils/webrtcFilters";
 // Language content configuration
 const LANGUAGE_CONTENT = {
   en: {
-    voiceId:"EXAVITQu4vr4xnSDxMaL",
+    voiceId:"cgSgspJ2msm6clMCkdW9",
     tokenRequired: "Token Required",
     tokenRequiredMessage:
       "Please provide a valid token in the URL: ?token=your_jwt_token",
@@ -1251,7 +1251,7 @@ const VoiceAgent = () => {
             firstMessage: currentContent.firstMessage,
           },
           tts: {
-            voice_id: currentContent.voiceId, 
+            voiceId: currentContent.voiceId, 
           },
         },
       };
