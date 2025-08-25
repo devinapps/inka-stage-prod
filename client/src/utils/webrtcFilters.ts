@@ -53,7 +53,7 @@ export class WebRTCAdvancedFilters {
     calibrated: false
   };
 
-  // Gate parameters (high profile)
+  // Gate parameters (high profile - previous version)
   private gateParams = {
     openThreshold: 0.015,
     closeThreshold: 0.009,
@@ -94,18 +94,18 @@ export class WebRTCAdvancedFilters {
     // Clear previous chain
     this.filterChain = [];
 
-    // 1. Highpass Filter (220 Hz, Q = 0.9)
+    // 1. Highpass Filter (200 Hz, Q = 0.7) - Previous version
     this.highPassFilter = this.audioContext.createBiquadFilter();
     this.highPassFilter.type = 'highpass';
-    this.highPassFilter.frequency.value = 220;
-    this.highPassFilter.Q.value = 0.9;
+    this.highPassFilter.frequency.value = 200;
+    this.highPassFilter.Q.value = 0.7;
     this.filterChain.push(this.highPassFilter);
 
-    // 2. Notch Filter (50/60 Hz hum removal, Q = 40)
+    // 2. Notch Filter (50/60 Hz hum removal, Q = 30) - Previous version
     this.notchFilter = this.audioContext.createBiquadFilter();
     this.notchFilter.type = 'notch';
     this.notchFilter.frequency.value = 60; // Use 50 for EU, 60 for US
-    this.notchFilter.Q.value = 40;
+    this.notchFilter.Q.value = 30;
     this.filterChain.push(this.notchFilter);
 
     // 3. Delay for lookahead (8ms)
@@ -119,36 +119,36 @@ export class WebRTCAdvancedFilters {
       this.filterChain.push(this.noiseGate);
     }
 
-    // 5. Speech Enhancer (2800 Hz, +4 dB, Q = 1.4)
+    // 5. Speech Enhancer (2500 Hz, +3 dB, Q = 1.2) - Previous version
     this.speechEnhancer = this.audioContext.createBiquadFilter();
     this.speechEnhancer.type = 'peaking';
-    this.speechEnhancer.frequency.value = 2800;
-    this.speechEnhancer.gain.value = 4;
-    this.speechEnhancer.Q.value = 1.4;
+    this.speechEnhancer.frequency.value = 2500;
+    this.speechEnhancer.gain.value = 3;
+    this.speechEnhancer.Q.value = 1.2;
     this.filterChain.push(this.speechEnhancer);
 
-    // 6. Lowpass Filter (6000 Hz, Q = 0.8)
+    // 6. Lowpass Filter (5500 Hz, Q = 0.7) - Previous version
     this.lowPassFilter = this.audioContext.createBiquadFilter();
     this.lowPassFilter.type = 'lowpass';
-    this.lowPassFilter.frequency.value = 6000;
-    this.lowPassFilter.Q.value = 0.8;
+    this.lowPassFilter.frequency.value = 5500;
+    this.lowPassFilter.Q.value = 0.7;
     this.filterChain.push(this.lowPassFilter);
 
-    // 7. Compressor (-20 dB threshold, 5:1 ratio, 2ms attack, 120ms release, 15 dB knee)
+    // 7. Compressor (-18 dB threshold, 4:1 ratio, 3ms attack, 100ms release, 12 dB knee) - Previous version
     this.compressor = this.audioContext.createDynamicsCompressor();
-    this.compressor.threshold.value = -20;
-    this.compressor.ratio.value = 5;
-    this.compressor.attack.value = 0.002;
-    this.compressor.release.value = 0.12;
-    this.compressor.knee.value = 15;
+    this.compressor.threshold.value = -18;
+    this.compressor.ratio.value = 4;
+    this.compressor.attack.value = 0.003;
+    this.compressor.release.value = 0.1;
+    this.compressor.knee.value = 12;
     this.filterChain.push(this.compressor);
 
-    // 8. Limiter (-3 dB threshold, 100ms release)
+    // 8. Limiter (-2 dB threshold, 80ms release) - Previous version
     this.limiter = this.audioContext.createDynamicsCompressor();
-    this.limiter.threshold.value = -3;
+    this.limiter.threshold.value = -2;
     this.limiter.ratio.value = 20; // Hard limiting
     this.limiter.attack.value = 0.001;
-    this.limiter.release.value = 0.1;
+    this.limiter.release.value = 0.08;
     this.limiter.knee.value = 0;
     this.filterChain.push(this.limiter);
 
@@ -288,13 +288,13 @@ export class WebRTCAdvancedFilters {
           this.calibration.noiseFloor = avgNoiseFloor;
           this.calibration.calibrated = true;
 
-          // Adjust parameters based on noise floor
+          // Adjust parameters based on noise floor (previous version)
           if (avgNoiseFloor > 0.02) {
             // High noise environment
             this.gateParams.openThreshold = Math.min(0.025, avgNoiseFloor * 1.5);
             this.gateParams.closeThreshold = Math.min(0.015, avgNoiseFloor * 1.2);
             if (this.highPassFilter) {
-              this.highPassFilter.frequency.value = 250; // Increase cutoff
+              this.highPassFilter.frequency.value = 220; // Increase cutoff - previous version
             }
             console.log('🔧 High noise calibration applied');
           } else if (avgNoiseFloor < 0.005) {
@@ -302,14 +302,14 @@ export class WebRTCAdvancedFilters {
             this.gateParams.openThreshold = Math.max(0.008, avgNoiseFloor * 2);
             this.gateParams.closeThreshold = Math.max(0.004, avgNoiseFloor * 1.5);
             if (this.highPassFilter) {
-              this.highPassFilter.frequency.value = 180; // Decrease cutoff
+              this.highPassFilter.frequency.value = 180; // Decrease cutoff - previous version
             }
             console.log('🔧 Low noise calibration applied');
           }
 
-          // Adjust output normalizer
+          // Adjust output normalizer (previous version)
           if (this.outputNormalizer) {
-            const gainAdjust = avgNoiseFloor > 0.015 ? 0.9 : 1.1; // -1dB or +1dB
+            const gainAdjust = avgNoiseFloor > 0.015 ? 0.95 : 1.05; // -0.5dB or +0.5dB - previous version
             this.outputNormalizer.gain.value = gainAdjust;
           }
 

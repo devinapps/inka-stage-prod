@@ -9,7 +9,7 @@ import { webrtcFilters, type NoiseFilterLevel } from "@/utils/webrtcFilters";
 // Language content configuration
 const LANGUAGE_CONTENT = {
   en: {
-    voiceId:"EXAVITQu4vr4xnSDxMaL",
+    voiceId:"cgSgspJ2msm6clMCkdW9",
     tokenRequired: "Token Required",
     tokenRequiredMessage:
       "Please provide a valid token in the URL: ?token=your_jwt_token",
@@ -59,7 +59,7 @@ const LANGUAGE_CONTENT = {
     dailyUsage: "Tổng gọi hôm nay: {used} / {limit} phút",
     muteButton: "Tắt tiếng",
     unmuteButton: "Mở tiếng",
-    voiceId:"cgSgspJ2msm6clMCkdW9",
+    voiceId:"CexKxuK9j3IaH2VqJ698",
     firstMessage:
       "Em chào {{greeting_message}} {{user_name}}, em là INKA - một trợ lý cá nhân. {{user_name}} muốn em giúp gì trong hôm nay?",
     features: [
