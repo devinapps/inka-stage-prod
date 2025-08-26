@@ -214,7 +214,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
             
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs text-muted-foreground">
-                <span className="font-medium">Tần số cắt</span>
+                <span className="font-medium">Mức loại bỏ tiếng trầm (Hz)</span>
                 <span className="bg-secondary px-2 py-1 rounded font-mono">{params.highPassFreq}Hz</span>
               </div>
               <Slider
@@ -230,7 +230,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
             
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs text-muted-foreground">
-                <span className="font-medium">Độ sắc nét (Q)</span>
+                <span className="font-medium">Độ chính xác lọc</span>
                 <span className="bg-secondary px-2 py-1 rounded font-mono">{params.highPassQ.toFixed(1)}</span>
               </div>
               <Slider
@@ -256,7 +256,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
             
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Tần số tăng cường</span>
+                <span>Tần số giọng nói (Hz)</span>
                 <span>{params.speechFreq}Hz</span>
               </div>
               <Slider
@@ -272,7 +272,23 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
             
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Mức tăng</span>
+                <span>Độ rộng vùng giọng</span>
+                <span>{params.speechQ.toFixed(1)}</span>
+              </div>
+              <Slider
+                value={[params.speechQ]}
+                onValueChange={([value]) => updateParam('speechQ', value)}
+                min={0.5}
+                max={5.0}
+                step={0.1}
+                className="w-full"
+                data-testid="slider-speech-q"
+              />
+            </div>
+            
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                <span>Độ rõ giọng nói (dB)</span>
                 <span>{params.speechGain}dB</span>
               </div>
               <Slider
@@ -298,7 +314,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
             
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Tần số cắt</span>
+                <span>Mức loại bỏ tiếng cao (Hz)</span>
                 <span>{params.lowPassFreq}Hz</span>
               </div>
               <Slider
@@ -311,6 +327,22 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
                 data-testid="slider-lowpass-freq"
               />
             </div>
+            
+            <div>
+              <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                <span>Độ chính xác lọc</span>
+                <span>{params.lowPassQ.toFixed(1)}</span>
+              </div>
+              <Slider
+                value={[params.lowPassQ]}
+                onValueChange={([value]) => updateParam('lowPassQ', value)}
+                min={0.1}
+                max={5.0}
+                step={0.1}
+                className="w-full"
+                data-testid="slider-lowpass-q"
+              />
+            </div>
           </div>
 
           <Separator />
@@ -321,7 +353,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
             
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Ngưỡng</span>
+                <span>Mức âm lượng bắt đầu nén (dB)</span>
                 <span>{params.compressorThreshold}dB</span>
               </div>
               <Slider
@@ -337,7 +369,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
             
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Tỷ lệ nén</span>
+                <span>Mức độ nén (tỉ lệ)</span>
                 <span>{params.compressorRatio}:1</span>
               </div>
               <Slider
