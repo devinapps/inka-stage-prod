@@ -98,30 +98,51 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
       <Button
         onClick={onToggleVisibility}
         variant="outline"
-        size="sm"
-        className="fixed top-4 right-2 sm:top-10 sm:right-4 z-50 
-         bg-background/80 backdrop-blur-sm
-         max-w-[90%] sm:max-w-none"
+        className="fixed z-50 
+        bg-background/95 backdrop-blur-sm border-2 border-primary/20 shadow-lg
+        hover:bg-primary hover:text-primary-foreground
+        transition-all duration-200 ease-in-out
+        
+        // Mobile positioning and sizing
+        bottom-4 right-4 
+        h-12 px-4 py-3 min-w-[140px]
+        text-sm font-medium
+        
+        // Desktop positioning and sizing  
+        sm:top-4 sm:right-4 sm:bottom-auto
+        sm:h-10 sm:px-3 sm:py-2 sm:min-w-[120px]
+        sm:text-xs"
         data-testid="button-show-audio-controls"
       >
-        <Settings className="h-4 w-4 mr-2" />
-        Điều chỉnh Audio
+        <Settings className="h-4 w-4 mr-2 flex-shrink-0" />
+        <span className="truncate">Điều chỉnh Audio</span>
       </Button>
     );
   }
 
   return (
-    <div className="fixed top-2 left-2 right-2 sm:top-4 sm:right-4 sm:left-auto
-       z-50 w-full sm:w-96 max-h-[80vh] overflow-y-auto" data-testid="panel-audio-controls">
-      <Card className="bg-background/95 backdrop-blur-sm shadow-lg">
-        <CardHeader className="pb-3">
+    <div className="fixed 
+       // Mobile: Full screen modal-like
+       inset-2 
+       // Desktop: Positioned panel
+       sm:top-4 sm:right-4 sm:left-auto sm:bottom-auto
+       z-50 
+       // Mobile: Full width with padding
+       w-auto
+       // Desktop: Fixed width
+       sm:w-96 
+       max-h-[90vh] sm:max-h-[80vh] 
+       overflow-y-auto" 
+       data-testid="panel-audio-controls">
+      <Card className="bg-background/98 backdrop-blur-sm shadow-2xl border-2">
+        <CardHeader className="pb-3 px-4 sm:px-6">
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Volume2 className="h-5 w-5" />
-                Điều chỉnh Audio Filter
+            <div className="flex-1 min-w-0">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <Volume2 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                <span className="truncate">Điều chỉnh Audio Filter</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm mt-1">
                 Điều chỉnh các tham số lọc âm thanh trực tiếp
               </CardDescription>
             </div>
@@ -129,57 +150,63 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
               onClick={onToggleVisibility}
               variant="ghost"
               size="sm"
+              className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 p-0 hover:bg-destructive hover:text-destructive-foreground"
               data-testid="button-hide-audio-controls"
             >
-              ×
+              <span className="text-lg font-bold">×</span>
             </Button>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 px-4 sm:px-6 sm:space-y-6">
           {/* Preset Buttons */}
           <div>
             <h4 className="text-sm font-medium mb-3">Cài đặt sẵn</h4>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <Button
                 onClick={() => applyPreset('quiet')}
                 variant="outline"
-                size="sm"
-                className="text-xs"
+                className="h-10 sm:h-8 text-xs sm:text-xs px-2 sm:px-3
+                hover:bg-primary hover:text-primary-foreground
+                transition-colors duration-200"
                 data-testid="button-preset-quiet"
               >
-                <Badge variant="secondary" className="mr-1">🤫</Badge>
-                Yên tĩnh
+                <Badge variant="secondary" className="mr-1 text-xs">🤫</Badge>
+                <span className="truncate">Yên tĩnh</span>
               </Button>
               <Button
                 onClick={() => applyPreset('conversation')}
                 variant="outline"
-                size="sm"
-                className="text-xs"
+                className="h-10 sm:h-8 text-xs sm:text-xs px-2 sm:px-3
+                bg-primary/10 border-primary/30
+                hover:bg-primary hover:text-primary-foreground
+                transition-colors duration-200"
                 data-testid="button-preset-conversation"
               >
-                <Badge variant="secondary" className="mr-1">💬</Badge>
-                Hội thoại
+                <Badge variant="secondary" className="mr-1 text-xs">💬</Badge>
+                <span className="truncate">Hội thoại</span>
               </Button>
               <Button
                 onClick={() => applyPreset('noisy')}
                 variant="outline"
-                size="sm"
-                className="text-xs"
+                className="h-10 sm:h-8 text-xs sm:text-xs px-2 sm:px-3
+                hover:bg-primary hover:text-primary-foreground
+                transition-colors duration-200"
                 data-testid="button-preset-noisy"
               >
-                <Badge variant="secondary" className="mr-1">🔊</Badge>
-                Môi trường ồn
+                <Badge variant="secondary" className="mr-1 text-xs">🔊</Badge>
+                <span className="truncate">Môi trường ồn</span>
               </Button>
               <Button
                 onClick={resetToDefault}
                 variant="outline"
-                size="sm"
-                className="text-xs"
+                className="h-10 sm:h-8 text-xs sm:text-xs px-2 sm:px-3
+                hover:bg-secondary hover:text-secondary-foreground
+                transition-colors duration-200"
                 data-testid="button-reset-default"
               >
-                <RotateCcw className="h-3 w-3 mr-1" />
-                Mặc định
+                <RotateCcw className="h-3 w-3 mr-1 flex-shrink-0" />
+                <span className="truncate">Mặc định</span>
               </Button>
             </div>
           </div>
@@ -189,14 +216,14 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
           {/* High-pass Filter */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
+              <Filter className="h-4 w-4 flex-shrink-0" />
               <h4 className="text-sm font-medium">High-pass Filter</h4>
             </div>
             
-            <div>
-              <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Tần số cắt</span>
-                <span>{params.highPassFreq}Hz</span>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs text-muted-foreground">
+                <span className="font-medium">Tần số cắt</span>
+                <span className="bg-secondary px-2 py-1 rounded font-mono">{params.highPassFreq}Hz</span>
               </div>
               <Slider
                 value={[params.highPassFreq]}
@@ -204,15 +231,15 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
                 min={50}
                 max={500}
                 step={10}
-                className="w-full"
+                className="w-full touch-pan-x"
                 data-testid="slider-highpass-freq"
               />
             </div>
             
-            <div>
-              <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                <span>Độ sắc nét (Q)</span>
-                <span>{params.highPassQ.toFixed(1)}</span>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs text-muted-foreground">
+                <span className="font-medium">Độ sắc nét (Q)</span>
+                <span className="bg-secondary px-2 py-1 rounded font-mono">{params.highPassQ.toFixed(1)}</span>
               </div>
               <Slider
                 value={[params.highPassQ]}
@@ -220,7 +247,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
                 min={0.1}
                 max={5.0}
                 step={0.1}
-                className="w-full"
+                className="w-full touch-pan-x"
                 data-testid="slider-highpass-q"
               />
             </div>
