@@ -134,7 +134,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
        max-h-[90vh] sm:max-h-[80vh] 
        overflow-y-auto" 
        data-testid="panel-audio-controls">
-      <Card className="bg-background/98 backdrop-blur-sm shadow-2xl border-2">
+      <Card className="bg-background backdrop-blur-sm shadow-2xl border-2">
         <CardHeader className="pb-3 px-4 sm:px-6">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
