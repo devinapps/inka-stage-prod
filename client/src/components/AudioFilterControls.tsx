@@ -99,7 +99,9 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
         onClick={onToggleVisibility}
         variant="outline"
         size="sm"
-        className="fixed top-4 right-4 z-50 bg-background/80 backdrop-blur-sm"
+        className="fixed top-4 right-2 sm:top-10 sm:right-4 z-50 
+         bg-background/80 backdrop-blur-sm
+         max-w-[90%] sm:max-w-none"
         data-testid="button-show-audio-controls"
       >
         <Settings className="h-4 w-4 mr-2" />
@@ -109,7 +111,8 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 w-96 max-h-[80vh] overflow-y-auto" data-testid="panel-audio-controls">
+    <div className="fixed top-2 left-2 right-2 sm:top-4 sm:right-4 sm:left-auto
+       z-50 w-full sm:w-96 max-h-[80vh] overflow-y-auto" data-testid="panel-audio-controls">
       <Card className="bg-background/95 backdrop-blur-sm shadow-lg">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
