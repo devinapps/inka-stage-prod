@@ -122,20 +122,20 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
 
   return (
     <div className="fixed 
-       // Mobile: Full screen modal-like
-       inset-2 
-       // Desktop: Positioned panel
+       // Mobile: Top-right positioned panel
+       top-2 right-2 left-2
+       // Desktop: Positioned panel  
        sm:top-4 sm:right-4 sm:left-auto sm:bottom-auto
        z-50 
-       // Mobile: Full width with padding
-       w-auto
+       // Mobile: Auto width with constraints
+       w-auto max-w-[calc(100vw-16px)]
        // Desktop: Fixed width
        sm:w-96 
-       max-h-[90vh] sm:max-h-[80vh] 
-       overflow-y-auto" 
+       max-h-[85vh] sm:max-h-[80vh] 
+       overflow-hidden" 
        data-testid="panel-audio-controls">
-      <Card className="bg-background backdrop-blur-sm shadow-2xl border-2">
-        <CardHeader className="pb-3 px-4 sm:px-6">
+      <Card className="bg-background/98 backdrop-blur-sm shadow-2xl border-2 h-full flex flex-col">
+        <CardHeader className="pb-3 px-4 sm:px-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
@@ -158,7 +158,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4 px-4 sm:px-6 sm:space-y-6">
+        <CardContent className="space-y-4 px-4 sm:px-6 sm:space-y-6 flex-1 overflow-y-auto">
           {/* Preset Buttons */}
           <div>
             <h4 className="text-sm font-medium mb-3">Cài đặt sẵn</h4>
