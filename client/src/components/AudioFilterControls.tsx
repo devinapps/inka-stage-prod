@@ -104,12 +104,12 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
         transition-all duration-200 ease-in-out
         
         // Mobile positioning and sizing
-        bottom-4 right-4 
+        top-4 right-4 
         h-12 px-4 py-3 min-w-[140px]
         text-sm font-medium
         
         // Desktop positioning and sizing  
-        sm:top-4 sm:right-4 sm:bottom-auto
+        sm:top-4 sm:right-4
         sm:h-10 sm:px-3 sm:py-2 sm:min-w-[120px]
         sm:text-xs"
         data-testid="button-show-audio-controls"
@@ -121,20 +121,12 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
   }
 
   return (
-    <div className="fixed 
-       // Mobile: Top-right positioned panel
-       top-2 right-2 left-2
-       // Desktop: Positioned panel  
-       sm:top-4 sm:right-4 sm:left-auto sm:bottom-auto
-       z-50 
-       // Mobile: Auto width with constraints
-       w-auto max-w-[calc(100vw-16px)]
-       // Desktop: Fixed width
-       sm:w-96 
-       max-h-[85vh] sm:max-h-[80vh] 
-       overflow-hidden" 
-       data-testid="panel-audio-controls">
-      <Card className="bg-background/98 backdrop-blur-sm shadow-2xl border-2 h-full flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" data-testid="panel-audio-controls">
+      <Card className="bg-background/98 backdrop-blur-sm shadow-2xl border-2 
+                       w-[70%] h-[65%] 
+                       flex flex-col
+                       max-w-md max-h-[600px]
+                       min-w-[300px] min-h-[400px]">
         <CardHeader className="pb-3 px-4 sm:px-6 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex-1 min-w-0">
