@@ -104,12 +104,12 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
         transition-all duration-200 ease-in-out
         
         // Mobile positioning and sizing
-        top-4 right-4 
+        top-20 right-4 
         h-12 px-4 py-3 min-w-[140px]
         text-sm font-medium
         
         // Desktop positioning and sizing  
-        sm:top-4 sm:right-4
+        sm:top-20 sm:right-4
         sm:h-10 sm:px-3 sm:py-2 sm:min-w-[120px]
         sm:text-xs"
         data-testid="button-show-audio-controls"
