@@ -122,7 +122,7 @@ export default function AudioFilterControls({ isVisible = false, onToggleVisibil
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" data-testid="panel-audio-controls">
-      <Card className="bg-background/98 backdrop-blur-sm shadow-2xl border-2 
+      <Card className="bg-background backdrop-blur-sm shadow-2xl border-2 
                        w-[70%] h-[65%] 
                        flex flex-col
                        max-w-md max-h-[600px]
