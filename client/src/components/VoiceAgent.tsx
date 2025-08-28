@@ -1570,11 +1570,11 @@ const VoiceAgent = () => {
         </div>
       )}
 
-      {/* Audio Filter Controls */}
-      <AudioFilterControls
+      {/* Audio Filter Controls - Hidden per user request */}
+      {/* <AudioFilterControls
         isVisible={showAudioControls}
         onToggleVisibility={() => setShowAudioControls(!showAudioControls)}
-      />
+      /> */}
     </div>
   );
 };

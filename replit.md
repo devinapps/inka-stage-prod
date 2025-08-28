@@ -3,11 +3,17 @@
 ## Overview
 This project is a full-stack voice AI agent application called "Inka", offering a voice-activated AI assistant with speech recognition and text-to-speech capabilities. Built with React and Express.js, it features a modern UI using shadcn/ui and Tailwind CSS. The application aims to provide an engaging user experience through advanced voice AI integration, including database-managed call limit system. The business vision is to deliver a seamless, intuitive, and scalable voice AI solution with configurable operational limits.
 
-## Recent Changes (August 25, 2025)
+## Recent Changes (August 28, 2025)
+- **Default Audio Profile Changed**: Changed default filter preset from "Hội thoại" to "Môi trường ồn" (noisy environment) for enhanced noise handling
+- **Audio Controls Hidden**: Completely hidden AudioFilterControls button and panel interface per user request - system now runs with fixed "noisy environment" preset
+- **Enhanced Speech Parameters**: Added `speechQ` (Độ rộng vùng giọng) and `lowPassQ` (Độ chính xác lọc) controls with real-time adjustment capabilities
+- **Optimized Filter Defaults**: Updated default parameters for aggressive noise cancellation (220Hz high-pass, 3000Hz speech enhancement, 5dB gain, stronger compression)
+- **UI Layout Improvements**: Refined panel positioning with 70% width, 65% height, and centered layout with proper scrolling support
+
+## Previous Changes (August 25, 2025)
 - **WebRTC Filter Simplification Final**: Simplified to single high-quality mode optimized for human conversation, removed multi-level complexity
 - **Real-time Parameter Control**: Added `AudioFilterControls` UI component allowing real-time adjustment of all filter parameters during calls
-- **Human Conversation Optimization**: Tuned default parameters specifically for natural human conversation (150Hz high-pass, 2500Hz speech enhancement, 3dB gain)
-- **Interactive UI Controls**: Users can now adjust High-pass filter, Speech enhancer, Low-pass filter, Compressor, and Noise gate parameters directly
+- **Interactive UI Controls**: Users can adjust High-pass filter, Speech enhancer, Low-pass filter, Compressor, and Noise gate parameters directly
 - **Preset System**: Added three presets - Yên tĩnh (quiet), Hội thoại (conversation), Môi trường ồn (noisy environment)
 - **Live Parameter Updates**: All audio filter parameters update in real-time without needing to restart the call
 - **Vietnamese Interface**: Audio controls fully localized in Vietnamese with intuitive slider controls and preset buttons

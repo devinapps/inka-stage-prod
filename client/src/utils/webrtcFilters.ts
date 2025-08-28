@@ -62,20 +62,20 @@ export class WebRTCAdvancedFilters {
   // WebRTC-specific parameters
   private isProcessing = false;
   
-  // Configurable filter parameters optimized for human conversation
+  // Configurable filter parameters optimized for noisy environments (default)
   public filterParams: AudioFilterParams = {
-    highPassFreq: 150,        // Remove low-freq noise while preserving voice
-    highPassQ: 1.2,           // Moderate rolloff
-    speechFreq: 2500,         // Voice clarity enhancement frequency
-    speechQ: 1.5,             // Clear enhancement
-    speechGain: 3,            // Moderate voice boost
-    lowPassFreq: 7000,        // Remove high-freq noise
-    lowPassQ: 1.0,            // Smooth rolloff
-    compressorThreshold: -20, // Gentle compression
-    compressorRatio: 3,       // Moderate compression
-    compressorAttack: 0.003,  // Natural attack
-    compressorRelease: 0.1,   // Smooth release
-    noiseGateThreshold: 0.015 // Balanced gate
+    highPassFreq: 220,        // Aggressive low-freq noise removal
+    highPassQ: 2.0,           // Sharp rolloff for noisy environments
+    speechFreq: 3000,         // Enhanced voice clarity in noise
+    speechQ: 2.0,             // Wide enhancement band
+    speechGain: 5,            // Strong voice boost for noisy environments
+    lowPassFreq: 6500,        // Aggressive high-freq noise removal
+    lowPassQ: 1.5,            // Sharper rolloff
+    compressorThreshold: -15, // Aggressive compression
+    compressorRatio: 4,       // Strong compression for noisy environments
+    compressorAttack: 0.002,  // Fast attack
+    compressorRelease: 0.08,  // Quick release
+    noiseGateThreshold: 0.025 // Higher threshold for noisy environments
   };
 
   constructor() {
