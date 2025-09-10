@@ -221,9 +221,8 @@ const VoiceAvatar = ({ isListening, isSpeaking, onToggleListening, status, audio
                 {actuallyListening ? 'Listening...' : 'Speaking...'}
               </span>
             </>
-          ) : (
-            <span className="text-red-500 text-sm font-medium">(Beta)</span>
           )}
+        
         </div>
       </div>
     </div>
